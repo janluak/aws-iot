@@ -47,7 +47,7 @@ def test_get_shadow(iot_shadow_config):
         payload=json.dumps({"state": {"reported": complex_test_state}}),
     )
 
-    from aws_iot.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
 
     iot_shadow = IoTShadowStaticHandler(test_thing_name)
     assert iot_shadow.reported == complex_test_state
@@ -55,7 +55,7 @@ def test_get_shadow(iot_shadow_config):
 
 @mock_iotdata
 def test_set_shadow(iot_shadow_config):
-    from aws_iot.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
 
     iot_shadow = IoTShadowStaticHandler(test_thing_name)
     iot_shadow.desired = complex_test_state
@@ -78,7 +78,7 @@ def test_set_shadow(iot_shadow_config):
 @mock_iotdata
 @freeze_time("2020-01-01")
 def test_get_shadow_meta(iot_shadow_config):
-    from aws_iot.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
 
     iot_shadow = IoTShadowStaticHandler(test_thing_name)
     iot_shadow.desired = complex_test_state
@@ -101,7 +101,7 @@ def test_get_shadow_meta(iot_shadow_config):
 
 @mock_iotdata
 def test_foreign_updated_shadow(iot_shadow_config):
-    from aws_iot.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
 
     iot_shadow = IoTShadowStaticHandler(test_thing_name)
     iot_shadow.desired = simple_test_state
@@ -123,7 +123,7 @@ def test_foreign_updated_shadow(iot_shadow_config):
 @mock_iotdata
 @freeze_time("2020-01-01")
 def test_unchangeable_properties(iot_shadow_config):
-    from aws_iot.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
 
     iot_shadow = IoTShadowStaticHandler(test_thing_name)
     iot_shadow.desired = simple_test_state
@@ -147,7 +147,7 @@ def test_unchangeable_properties(iot_shadow_config):
 
 @mock_iotdata
 def test_set_desired_and_retrieve_reported(iot_shadow_config):
-    from aws_iot.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
 
     iot_shadow = IoTShadowStaticHandler(test_thing_name)
     iot_shadow.desired = complex_test_state
@@ -164,7 +164,7 @@ def test_set_desired_and_retrieve_reported(iot_shadow_config):
 @mock_iotdata
 @freeze_time()
 def test_update_part_of_state(iot_shadow_config):
-    from aws_iot.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
 
     updated_complex_state = {
         "level1": {

@@ -32,8 +32,8 @@ def test_get_type_from_resource(iot_shadow_config):
         payload=json.dumps({"state": {"reported": test_state}}),
     )
 
-    from aws_iot.shadow.shadow_resource import iot_shadow_resource
-    from aws_iot.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_resource import iot_shadow_resource
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
 
     assert issubclass(
         iot_shadow_resource[test_thing_name].__class__, IoTShadowStaticHandler
@@ -49,6 +49,6 @@ def test_get_shadow_from_resource(iot_shadow_config):
         payload=json.dumps({"state": {"reported": test_state}}),
     )
 
-    from aws_iot.shadow.shadow_resource import iot_shadow_resource
+    from aws_iot_handler.shadow.shadow_resource import iot_shadow_resource
 
     assert iot_shadow_resource[test_thing_name].reported == test_state
