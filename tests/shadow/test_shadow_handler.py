@@ -3,7 +3,7 @@ from moto import mock_iot, mock_iotdata
 from freezegun import freeze_time
 from os.path import dirname, realpath
 import json
-from pytest import fixture
+from pytest import fixture, mark
 
 test_thing_name = "TestThing"
 simple_test_state = {"test_key": "new_test_value"}
@@ -162,6 +162,20 @@ def test_set_desired_and_retrieve_reported(iot_shadow_config):
 
 
 @mock_iotdata
+def test_set_desired_and_retrieve_reported_with_always_update_handler(iot_shadow_config):
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
+
+    iot_shadow = IoTShadowHandler(test_thing_name)
+    iot_shadow.desired = complex_test_state
+
+    assert iot_shadow.delta == complex_test_state
+
+    echo_desired_as_reported()
+
+    assert iot_shadow.reported == complex_test_state
+
+
+@mock_iotdata
 @freeze_time()
 def test_update_part_of_state(iot_shadow_config):
     from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
@@ -188,3 +202,48 @@ def test_update_part_of_state(iot_shadow_config):
     echo_desired_as_reported()
     iot_shadow.refresh()
     assert iot_shadow.reported == updated_complex_state
+
+
+@mark.skip("bug in moto: only updated keys are in meta available")
+@mock_iotdata
+def test_get_shadow_meta_with_partly_update(iot_shadow_config):
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
+
+    iot_shadow = IoTShadowStaticHandler(test_thing_name)
+    with freeze_time("2020-01-01"):
+        iot_shadow.desired = complex_test_state
+
+    assert iot_shadow.meta == {
+        "desired": {
+            "level1": {
+                "level2a": {
+                    "key1": {"timestamp": 1577836800},
+                    "key2": {"timestamp": 1577836800},
+                },
+                "level2b": {
+                    "key1": {"timestamp": 1577836800},
+                    "key2": {"timestamp": 1577836800},
+                },
+            }
+        }
+    }
+
+    with freeze_time("2020-01-02"):
+        iot_shadow.update({"level1": {"level2a": {"key2": "new_value"}}})
+
+    iot_shadow.refresh()
+
+    assert iot_shadow.meta == {
+        "desired": {
+            "level1": {
+                "level2a": {
+                    "key1": {"timestamp": 1577836800},
+                    "key2": {"timestamp": 1577923200},
+                },
+                "level2b": {
+                    "key1": {"timestamp": 1577836800},
+                    "key2": {"timestamp": 1577836800},
+                },
+            }
+        }
+    }

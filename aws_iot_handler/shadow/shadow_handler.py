@@ -1,46 +1,34 @@
 from aws_environ_helper import environ, update_nested_dict
+from ._base_shadow import _BaseShadow
 from boto3 import client
 from json import loads, dumps
-from copy import deepcopy
+from abc import abstractmethod
 
-
-__all__ = ["IoTShadowStaticHandler"]
+__all__ = ["IoTShadowHandler", "IoTShadowStaticHandler"]
 
 
 _iot_client = client("iot-data", region_name=environ["AWS_REGION"])
 
 
-class IoTShadowStaticHandler:
-    def __init__(self, iot_device_name):
-        self.__device_name = iot_device_name
-        self.__state = dict()
-        self.__meta = dict()
-
-        self.__fetch_timestamp = int()
-        self.__version = int()
-
-    def __get_property_of_state(self, prop):
-        if not self.__fetch_timestamp:
-            self.refresh()
-        return deepcopy(self.__state[prop] if prop in self.__state else dict())
+class _IoTShadowHandler(_BaseShadow):
+    @property
+    @abstractmethod
+    def _always_update(self):
+        return bool
 
     @property
     def state(self):
-        if not self.__fetch_timestamp:
-            self.refresh()
-        return deepcopy(self.__state)
+        if not self.update_timestamp or self._always_update:
+            self._refresh()
+        return super().state
 
     @state.deleter
     def state(self):
         del self.desired
 
     @property
-    def reported(self):
-        return self.__get_property_of_state("reported")
-
-    @property
     def desired(self):
-        return self.__get_property_of_state("desired")
+        return super().desired
 
     @desired.setter
     def desired(self, new_state: dict):
@@ -50,41 +38,53 @@ class IoTShadowStaticHandler:
     def desired(self):
         self.__set_new_desired_state(dict())
 
-    @property
-    def delta(self):
-        return self.__get_property_of_state("delta")
+    def update(self, update_values: dict):
+        self.__set_new_desired_state(update_values)
+
+    def _refresh(self):
+        response = _iot_client.get_thing_shadow(thingName=self.thing_name)
+        self.__set_properties_from_response(response)
 
     @property
     def meta(self):
-        if not self.__fetch_timestamp:
-            self.refresh()
-        return deepcopy(self.__meta)
+        if not self.update_timestamp:
+            self._refresh()
+        return super().meta
 
-    def update(self, update_values):
-        update_nested_dict(self.__state["desired"], update_values)
-        self.__set_new_desired_state(self.__state["desired"])
+    def __set_properties_from_response(self, response):
+        payload = loads(response["payload"].read())
+        self._full_state = update_nested_dict(self._full_state, payload["state"])
+        self._meta = update_nested_dict(self._meta, payload["metadata"])
+        self._update_timestamp = payload["timestamp"]
+        self._version = payload["version"]
 
-    def __set_properties(self, payload):
-        self.__state = payload["state"]
-        self.__meta = payload["metadata"]
-        self.__fetch_timestamp = payload["timestamp"]
-        self.__version = payload["version"]
+    def _get_property_of_state(self, prop):
+        if not self.update_timestamp or self._always_update:
+            self._refresh()
+        return super()._get_property_of_state(prop)
 
-    def refresh(self):
-        response = _iot_client.get_thing_shadow(thingName=self.__device_name)
-        self.__set_properties(loads(response["payload"].read()))
-
-    def __set_new_desired_state(self, new_desired):
+    def __set_new_desired_state(self, new_desired: dict):
         if not isinstance(new_desired, dict):
             raise TypeError("new desired state must be of type dict")
 
         response = _iot_client.update_thing_shadow(
-            thingName=self.__device_name,
+            thingName=self.thing_name,
             payload=dumps({"state": {"desired": new_desired}}),
         )
 
         if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
-            self.__set_properties(loads(response["payload"].read()))
+            self.__set_properties_from_response(response)
 
         else:
             raise ResourceWarning(response)
+
+
+class IoTShadowStaticHandler(_IoTShadowHandler):
+    _always_update = False
+
+    def refresh(self):
+        self._refresh()
+
+
+class IoTShadowHandler(_IoTShadowHandler):
+    _always_update = True
