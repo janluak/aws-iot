@@ -33,10 +33,10 @@ def test_get_type_from_resource(iot_shadow_config):
     )
 
     from aws_iot_handler.shadow.shadow_resource import iot_shadow_resource
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
 
     assert issubclass(
-        iot_shadow_resource[test_thing_name].__class__, IoTShadowStaticHandler
+        iot_shadow_resource[test_thing_name].__class__, IoTShadowHandler
     )
 
 

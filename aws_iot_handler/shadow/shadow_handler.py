@@ -4,22 +4,16 @@ from boto3 import client
 from json import loads, dumps
 from abc import abstractmethod
 
-__all__ = ["IoTShadowHandler", "IoTShadowStaticHandler"]
+__all__ = ["IoTShadowHandler"]
 
 
 _iot_client = client("iot-data", region_name=environ["AWS_REGION"])
 
 
-class _IoTShadowHandler(_BaseShadow):
-    @property
-    @abstractmethod
-    def _always_update(self):
-        return bool
-
+class IoTShadowHandler(_BaseShadow):
     @property
     def state(self):
-        if not self.update_timestamp or self._always_update:
-            self._refresh()
+        self.__refresh()
         return super().state
 
     @state.deleter
@@ -41,26 +35,21 @@ class _IoTShadowHandler(_BaseShadow):
     def update(self, update_values: dict):
         self.__set_new_desired_state(update_values)
 
-    def _refresh(self):
+    def __refresh(self):
         response = _iot_client.get_thing_shadow(thingName=self.thing_name)
-        self.__set_properties_from_response(response)
-
-    @property
-    def meta(self):
-        if not self.update_timestamp:
-            self._refresh()
-        return super().meta
-
-    def __set_properties_from_response(self, response):
         payload = loads(response["payload"].read())
-        self._full_state = update_nested_dict(self._full_state, payload["state"])
-        self._meta = update_nested_dict(self._meta, payload["metadata"])
+        self._full_state = payload["state"]
+        self._meta = payload["metadata"]
         self._update_timestamp = payload["timestamp"]
         self._version = payload["version"]
 
+    @property
+    def meta(self):
+        self.__refresh()
+        return super().meta
+
     def _get_property_of_state(self, prop):
-        if not self.update_timestamp or self._always_update:
-            self._refresh()
+        self.__refresh()
         return super()._get_property_of_state(prop)
 
     def __set_new_desired_state(self, new_desired: dict):
@@ -72,19 +61,5 @@ class _IoTShadowHandler(_BaseShadow):
             payload=dumps({"state": {"desired": new_desired}}),
         )
 
-        if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
-            self.__set_properties_from_response(response)
-
-        else:
+        if response["ResponseMetadata"]["HTTPStatusCode"] != 200:
             raise ResourceWarning(response)
-
-
-class IoTShadowStaticHandler(_IoTShadowHandler):
-    _always_update = False
-
-    def refresh(self):
-        self._refresh()
-
-
-class IoTShadowHandler(_IoTShadowHandler):
-    _always_update = True

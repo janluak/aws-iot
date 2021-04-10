@@ -14,6 +14,7 @@ complex_test_state = {
 
 @mock_iotdata
 def echo_desired_as_reported():
+    from aws_environ_helper.nested_dict import update_nested_dict
     iot_client = client("iot-data", region_name=environ["AWS_REGION"])
     payload = json.loads(
         iot_client.get_thing_shadow(thingName=test_thing_name)["payload"].read()
@@ -21,7 +22,9 @@ def echo_desired_as_reported():
     desire = payload["state"]["desired"]
     iot_client.update_thing_shadow(
         thingName=test_thing_name,
-        payload=json.dumps({"state": {"reported": desire, "desired": desire}}),
+        payload=json.dumps({"state": {"reported": update_nested_dict(
+            payload["state"]["reported"] if "reported" in payload["state"] else dict(), desire), "desired": desire}}
+        )
     )
 
 
@@ -47,17 +50,17 @@ def test_get_shadow(iot_shadow_config):
         payload=json.dumps({"state": {"reported": complex_test_state}}),
     )
 
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
 
-    iot_shadow = IoTShadowStaticHandler(test_thing_name)
+    iot_shadow = IoTShadowHandler(test_thing_name)
     assert iot_shadow.reported == complex_test_state
 
 
 @mock_iotdata
 def test_set_shadow(iot_shadow_config):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
 
-    iot_shadow = IoTShadowStaticHandler(test_thing_name)
+    iot_shadow = IoTShadowHandler(test_thing_name)
     iot_shadow.desired = complex_test_state
 
     assert iot_shadow.desired == complex_test_state
@@ -70,17 +73,15 @@ def test_set_shadow(iot_shadow_config):
     assert payload["state"]["desired"] == complex_test_state
     assert payload["state"]["delta"] == complex_test_state
 
-    assert iot_shadow.delta != complex_test_state
-    iot_shadow.refresh()
     assert iot_shadow.delta == complex_test_state
 
 
 @mock_iotdata
 @freeze_time("2020-01-01")
 def test_get_shadow_meta(iot_shadow_config):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
 
-    iot_shadow = IoTShadowStaticHandler(test_thing_name)
+    iot_shadow = IoTShadowHandler(test_thing_name)
     iot_shadow.desired = complex_test_state
 
     assert iot_shadow.meta == {
@@ -101,9 +102,9 @@ def test_get_shadow_meta(iot_shadow_config):
 
 @mock_iotdata
 def test_foreign_updated_shadow(iot_shadow_config):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
 
-    iot_shadow = IoTShadowStaticHandler(test_thing_name)
+    iot_shadow = IoTShadowHandler(test_thing_name)
     iot_shadow.desired = simple_test_state
 
     assert iot_shadow.desired == simple_test_state
@@ -114,18 +115,15 @@ def test_foreign_updated_shadow(iot_shadow_config):
         payload=json.dumps({"state": {"reported": {"test_key": "new_test_value"}}}),
     )
 
-    assert iot_shadow.reported != {"test_key": "new_test_value"}
-
-    iot_shadow.refresh()
     assert iot_shadow.reported == {"test_key": "new_test_value"}
 
 
 @mock_iotdata
 @freeze_time("2020-01-01")
 def test_unchangeable_properties(iot_shadow_config):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
 
-    iot_shadow = IoTShadowStaticHandler(test_thing_name)
+    iot_shadow = IoTShadowHandler(test_thing_name)
     iot_shadow.desired = simple_test_state
 
     state = iot_shadow.reported
@@ -147,16 +145,14 @@ def test_unchangeable_properties(iot_shadow_config):
 
 @mock_iotdata
 def test_set_desired_and_retrieve_reported(iot_shadow_config):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
 
-    iot_shadow = IoTShadowStaticHandler(test_thing_name)
+    iot_shadow = IoTShadowHandler(test_thing_name)
     iot_shadow.desired = complex_test_state
-    iot_shadow.refresh()
 
     assert iot_shadow.delta == complex_test_state
 
     echo_desired_as_reported()
-    iot_shadow.refresh()
 
     assert iot_shadow.reported == complex_test_state
 
@@ -178,7 +174,7 @@ def test_set_desired_and_retrieve_reported_with_always_update_handler(iot_shadow
 @mock_iotdata
 @freeze_time()
 def test_update_part_of_state(iot_shadow_config):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
 
     updated_complex_state = {
         "level1": {
@@ -187,29 +183,28 @@ def test_update_part_of_state(iot_shadow_config):
         }
     }
 
-    iot_shadow = IoTShadowStaticHandler(test_thing_name)
+    iot_shadow = IoTShadowHandler(test_thing_name)
     iot_shadow.desired = complex_test_state
 
     assert iot_shadow.desired == complex_test_state
     echo_desired_as_reported()
-    iot_shadow.refresh()
     assert iot_shadow.reported == complex_test_state
 
-    iot_shadow.update({"level1": {"level2a": {"key2": "new_value"}}})
+    update_data = {"level1": {"level2a": {"key2": "new_value"}}}
+    iot_shadow.update(update_data)
 
-    assert iot_shadow.desired == updated_complex_state
+    assert iot_shadow.desired == update_data
     assert iot_shadow.reported != updated_complex_state
     echo_desired_as_reported()
-    iot_shadow.refresh()
     assert iot_shadow.reported == updated_complex_state
 
 
 @mark.skip("bug in moto: only updated keys are in meta available")
 @mock_iotdata
 def test_get_shadow_meta_with_partly_update(iot_shadow_config):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowStaticHandler
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
 
-    iot_shadow = IoTShadowStaticHandler(test_thing_name)
+    iot_shadow = IoTShadowHandler(test_thing_name)
     with freeze_time("2020-01-01"):
         iot_shadow.desired = complex_test_state
 
@@ -230,8 +225,6 @@ def test_get_shadow_meta_with_partly_update(iot_shadow_config):
 
     with freeze_time("2020-01-02"):
         iot_shadow.update({"level1": {"level2a": {"key2": "new_value"}}})
-
-    iot_shadow.refresh()
 
     assert iot_shadow.meta == {
         "desired": {
