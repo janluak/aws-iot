@@ -29,7 +29,7 @@ class IoTShadowHandler(_BaseShadow):
 
     @desired.deleter
     def desired(self):
-        self.__set_new_desired_state(dict())
+        self.__set_new_desired_state(None)
 
     def update(self, update_values: dict):
         self.__set_new_desired_state(update_values)
@@ -51,8 +51,8 @@ class IoTShadowHandler(_BaseShadow):
         self.__refresh()
         return super()._get_property_of_state(prop)
 
-    def __set_new_desired_state(self, new_desired: dict):
-        if not isinstance(new_desired, dict):
+    def __set_new_desired_state(self, new_desired: (dict, None)):
+        if not isinstance(new_desired, (dict, type(None))):
             raise TypeError("new desired state must be of type dict")
 
         response = _iot_client.update_thing_shadow(

@@ -240,3 +240,19 @@ def test_get_shadow_meta_with_partly_update(iot_shadow_config):
             }
         }
     }
+
+
+@mark.skip("bug in moto #3850: None is saved as value and not deleting the key")
+@mock_iotdata
+def test_remove_desired_entry(iot_shadow_config):
+    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
+    iot_shadow = IoTShadowHandler(test_thing_name)
+
+    iot_shadow.desired = complex_test_state
+    assert iot_shadow.desired == complex_test_state
+
+    iot_shadow.update({"level1": {"level2b": None}})
+    assert iot_shadow.desired == {"level1": {"level2a": {"key1": 1, "key2": 2}}}
+
+    del iot_shadow.desired
+    assert iot_shadow.desired == dict()
