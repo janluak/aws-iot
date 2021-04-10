@@ -24,7 +24,7 @@ class _BaseShadow(ABC):
         return self._version
 
     def _get_property_of_state(self, prop):
-        return deepcopy(self._full_state[prop] if prop in self._full_state else dict())
+        return deepcopy(self._full_state.pop(prop, dict()))
 
     @property
     def state(self) -> dict:
