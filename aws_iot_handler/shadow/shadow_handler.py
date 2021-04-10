@@ -1,8 +1,7 @@
-from aws_environ_helper import environ, update_nested_dict
+from aws_environ_helper import environ
 from ._base_shadow import _BaseShadow
 from boto3 import client
 from json import loads, dumps
-from abc import abstractmethod
 
 __all__ = ["IoTShadowHandler"]
 
