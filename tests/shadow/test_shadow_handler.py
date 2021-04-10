@@ -199,7 +199,7 @@ def test_update_part_of_state(iot_shadow_config):
     assert iot_shadow.reported == updated_complex_state
 
 
-@mark.skip("bug in moto: only updated keys are in meta available")
+@mark.skip("bug in moto #3849: only updated keys are in meta available")
 @mock_iotdata
 def test_get_shadow_meta_with_partly_update(iot_shadow_config):
     from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
