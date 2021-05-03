@@ -5,8 +5,9 @@ __all__ = ["iot_shadow_resource"]
 
 
 class IoTResourceController:
-    def __init__(self):
+    def __init__(self, endpoint_url: str = None):
         self.__iot_devices = dict()
+        self.__endpoint_url = endpoint_url
 
     def __getitem__(self, iot_device_name: str) -> IoTShadowHandler:
         if iot_device_name not in self.__iot_devices:
@@ -15,7 +16,7 @@ class IoTResourceController:
         return self.__iot_devices[iot_device_name]
 
     def __create_shadow_connection(self, iot_device_name: str):
-        self.__iot_devices[iot_device_name] = IoTShadowHandler(iot_device_name)
+        self.__iot_devices[iot_device_name] = IoTShadowHandler(iot_device_name, self.__endpoint_url)
 
 
 iot_shadow_resource = IoTResourceController()

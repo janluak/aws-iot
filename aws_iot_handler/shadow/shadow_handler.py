@@ -10,6 +10,17 @@ _iot_client = client("iot-data", region_name=environ["AWS_REGION"])
 
 
 class IoTShadowHandler(_BaseShadow):
+    def __init__(self, thing_name: str, endpoint_url: str = None):
+        if endpoint_url:
+            global _iot_client
+            _iot_client = client(
+                "iot-data",
+                region_name=environ["AWS_REGION"],
+                endpoint_url=endpoint_url
+            )
+
+        super().__init__(thing_name)
+
     @property
     def state(self):
         self.__refresh()
