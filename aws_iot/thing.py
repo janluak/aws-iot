@@ -262,7 +262,7 @@ class BaseIoTThing(_BaseShadow, ABC):
         self._update_timestamp = payload["timestamp"]
         if not self.desired:
             self._full_state["desired"] = dict()
-        self._full_state["desired"].update_desired(payload["state"])
+        self._full_state["desired"].update(payload["state"])
         self.handle_delta(payload["state"], responseStatus, token)
 
     def cache_new_state(self, new_state: dict):
