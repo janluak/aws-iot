@@ -14,7 +14,7 @@ complex_test_state = {
 
 @mock_iotdata
 def echo_desired_as_reported():
-    from aws_iot_handler.shadow.shadow_client import _update_nested_dict
+    from aws_iot_handler.thing import _update_nested_dict
     iot_client = client("iot-data", region_name=environ["AWS_REGION"])
     payload = json.loads(
         iot_client.get_thing_shadow(thingName=environ["TestThingName"])["payload"].read()
