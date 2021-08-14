@@ -11,7 +11,7 @@ import inspect
 import json
 from collections.abc import Mapping
 
-__all__ = ["BaseIoTShadowClient"]
+__all__ = ["BaseIoTThing"]
 
 MQTT_OPERATION_TIMEOUT = 5
 
@@ -134,7 +134,7 @@ def _update_state_from_response(reported_state, response):
     return reported_state
 
 
-class BaseIoTShadowClient(_BaseShadow, ABC):
+class BaseIoTThing(_BaseShadow, ABC):
     """
     Custom AWS thing shadow taking care of the underlying functions used in all AWS shadows for the coffee machine
     """

@@ -1,13 +1,13 @@
 from pathlib import Path
 from pytest import mark
 from os import environ
-from aws_iot_handler.thing import BaseIoTShadowClient
+from aws_iot.thing import BaseIoTThing
 
 
 endpoint = "None"
 
 
-class ShadowThing(BaseIoTShadowClient):
+class ShadowThing(BaseIoTThing):
     def __init__(self):
         super(ShadowThing, self).__init__(
             environ["TestThingName"],

@@ -4,7 +4,7 @@ If development mode (=changes in package code directly delivered to python) `pip
 """
 
 from setuptools import setup, find_packages
-from aws_iot_handler import __version__
+from aws_iot import __version__
 
 # https://python-packaging.readthedocs.io/en/latest/minimal.html
 
@@ -12,7 +12,7 @@ with open("README.md", "r") as f:
     long_description = f.read()
 
 setup(
-    name="aws_iot_handler",
+    name="aws_iot",
     version=__version__,
     description="easing interaction with AWS IoT",
     long_description=long_description,

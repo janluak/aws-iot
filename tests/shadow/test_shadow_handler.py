@@ -14,7 +14,7 @@ complex_test_state = {
 
 @mock_iotdata
 def echo_desired_as_reported():
-    from aws_iot_handler.thing import _update_nested_dict
+    from aws_iot.thing import _update_nested_dict
     iot_client = client("iot-data", region_name=environ["AWS_REGION"])
     payload = json.loads(
         iot_client.get_thing_shadow(thingName=environ["TestThingName"])["payload"].read()
@@ -36,7 +36,7 @@ def test_get_shadow(setup_thing):
         payload=json.dumps({"state": {"reported": complex_test_state}}),
     )
 
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
+    from aws_iot.shadow.shadow_handler import IoTShadowHandler
 
     iot_shadow = IoTShadowHandler(environ["TestThingName"])
     assert iot_shadow.reported == complex_test_state
@@ -44,7 +44,7 @@ def test_get_shadow(setup_thing):
 
 @mock_iotdata
 def test_set_shadow(setup_thing):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
+    from aws_iot.shadow.shadow_handler import IoTShadowHandler
 
     iot_shadow = IoTShadowHandler(environ["TestThingName"])
     iot_shadow.desired = complex_test_state
@@ -65,7 +65,7 @@ def test_set_shadow(setup_thing):
 @mock_iotdata
 @freeze_time("2020-01-01")
 def test_get_shadow_meta(setup_thing):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
+    from aws_iot.shadow.shadow_handler import IoTShadowHandler
 
     iot_shadow = IoTShadowHandler(environ["TestThingName"])
     iot_shadow.desired = complex_test_state
@@ -88,7 +88,7 @@ def test_get_shadow_meta(setup_thing):
 
 @mock_iotdata
 def test_foreign_updated_shadow(setup_thing):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
+    from aws_iot.shadow.shadow_handler import IoTShadowHandler
 
     iot_shadow = IoTShadowHandler(environ["TestThingName"])
     iot_shadow.desired = simple_test_state
@@ -107,7 +107,7 @@ def test_foreign_updated_shadow(setup_thing):
 @mock_iotdata
 @freeze_time("2020-01-01")
 def test_unchangeable_properties(setup_thing):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
+    from aws_iot.shadow.shadow_handler import IoTShadowHandler
 
     iot_shadow = IoTShadowHandler(environ["TestThingName"])
     iot_shadow.desired = simple_test_state
@@ -131,7 +131,7 @@ def test_unchangeable_properties(setup_thing):
 
 @mock_iotdata
 def test_set_desired_and_retrieve_reported(setup_thing):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
+    from aws_iot.shadow.shadow_handler import IoTShadowHandler
 
     iot_shadow = IoTShadowHandler(environ["TestThingName"])
     iot_shadow.desired = complex_test_state
@@ -145,7 +145,7 @@ def test_set_desired_and_retrieve_reported(setup_thing):
 
 @mock_iotdata
 def test_set_desired_and_retrieve_reported_with_always_update_handler(setup_thing):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
+    from aws_iot.shadow.shadow_handler import IoTShadowHandler
 
     iot_shadow = IoTShadowHandler(environ["TestThingName"])
     iot_shadow.desired = complex_test_state
@@ -160,7 +160,7 @@ def test_set_desired_and_retrieve_reported_with_always_update_handler(setup_thin
 @mock_iotdata
 @freeze_time()
 def test_update_part_of_state(setup_thing):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
+    from aws_iot.shadow.shadow_handler import IoTShadowHandler
 
     updated_complex_state = {
         "level1": {
@@ -191,7 +191,7 @@ def test_update_part_of_state(setup_thing):
 @mark.skip("bug in moto #3849: only updated keys are in meta available")
 @mock_iotdata
 def test_get_shadow_meta_with_partly_update(setup_thing):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
+    from aws_iot.shadow.shadow_handler import IoTShadowHandler
 
     iot_shadow = IoTShadowHandler(environ["TestThingName"])
     with freeze_time("2020-01-01"):
@@ -233,7 +233,7 @@ def test_get_shadow_meta_with_partly_update(setup_thing):
 
 @mock_iotdata
 def test_remove_desired_entry(setup_thing):
-    from aws_iot_handler.shadow.shadow_handler import IoTShadowHandler
+    from aws_iot.shadow.shadow_handler import IoTShadowHandler
     iot_shadow = IoTShadowHandler(environ["TestThingName"])
 
     iot_shadow.desired = complex_test_state

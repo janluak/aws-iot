@@ -2,7 +2,7 @@ from pytest import mark
 from moto import mock_iotdata
 from boto3 import client
 from json import dumps, loads
-from aws_iot_handler.testing import *
+from aws_iot.testing import *
 
 
 test_state = {"state": {"desired": {"testData": "1"}}}
