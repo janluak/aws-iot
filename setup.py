@@ -4,7 +4,7 @@ If development mode (=changes in package code directly delivered to python) `pip
 """
 
 from setuptools import setup, find_packages
-from aws_environ_helper import __version__
+from aws_iot_handler import __version__
 
 # https://python-packaging.readthedocs.io/en/latest/minimal.html
 
@@ -18,7 +18,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Jan Lukas Braje",
-    author_email="aws_iot_handler@getkahawa.com",
+    author_email="aws_iot@getkahawa.com",
     packages=find_packages(),
     python_requires=">=3.8",
     zip_safe=False,
@@ -30,6 +30,6 @@ setup(
         "Programming Language :: Python :: 3.8",
     ],
     # https://pypi.org/pypi?%3Aaction=list_classifiers
-    install_requires=["boto3", "aws_environ_helper"],
+    install_requires=["boto3", "AWSIoTPythonSDK"],
     extra_require={"testing": ["pytest", "moto", "freezegun"]},
 )

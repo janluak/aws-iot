@@ -1,4 +1,4 @@
-from aws_environ_helper import environ
+from os import environ
 from ._base_shadow import _BaseShadow
 from boto3 import client
 from json import loads, dumps
@@ -6,7 +6,9 @@ from json import loads, dumps
 __all__ = ["IoTShadowHandler"]
 
 
-_iot_client = client("iot-data", region_name=environ["AWS_REGION"])
+_iot_client = client("iot-data", region_name=environ["AWS_REGION"],
+                     # endpoint_url="https://at7c82lz6730l-ats.iot.eu-central-1.amazonaws.com"
+                     )
 
 
 class IoTShadowHandler(_BaseShadow):
@@ -42,7 +44,7 @@ class IoTShadowHandler(_BaseShadow):
     def desired(self):
         self.__set_new_desired_state(None)
 
-    def update(self, update_values: dict):
+    def update_desired(self, update_values: dict):
         self.__set_new_desired_state(update_values)
 
     def __refresh(self):

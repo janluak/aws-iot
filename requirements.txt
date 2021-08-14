@@ -1,2 +1,2 @@
 boto3
-aws_environ_helper
+AWSIoTPythonSDK
