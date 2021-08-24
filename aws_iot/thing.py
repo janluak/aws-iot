@@ -4,12 +4,14 @@ from AWSIoTPythonSDK.core.shadow.deviceShadow import deviceShadow
 from .shadow._base_shadow import _BaseShadow
 from abc import ABC, abstractmethod
 from threading import Thread, Lock
+from time import sleep
 from glob import glob
 from pathlib import Path
 import logging
 import inspect
 import json
 from collections.abc import Mapping
+from copy import deepcopy
 
 __all__ = ["BaseIoTThing"]
 
@@ -172,9 +174,12 @@ class BaseIoTThing(_BaseShadow, ABC):
         self.__cache_new_state = dict()
 
         self.__update_lock = Lock()
+        self.__get_shadow_lock = Lock()
 
         self.__create_aws_mqtt_shadow_client()
         self.__create_aws_handler()
+        if not delete_shadow_on_init:
+            self.__get_shadow()
         # self.log.success("finished initialization of object " + self.__class__.__name__)
 
     def __create_aws_mqtt_shadow_client(self):
@@ -202,6 +207,9 @@ class BaseIoTThing(_BaseShadow, ABC):
 
         self.__mqtt_client.connect()
         logging.info("connected to AWS")
+
+    def disconnect(self):
+        self.__mqtt_client.disconnect()
 
     def __create_aws_handler(self):
         """
@@ -250,7 +258,11 @@ class BaseIoTThing(_BaseShadow, ABC):
 
     @reported.deleter
     def reported(self):
-        self.update_shadow(None)
+        self._shadow_handler.shadowUpdate(
+            json.dumps({"state": {"reported": None}}),
+            self.__callback_updating_shadow,
+            MQTT_OPERATION_TIMEOUT
+        )
 
     @abstractmethod
     def handle_delta(self, delta: dict, responseStatus: str, token: str):
@@ -270,14 +282,15 @@ class BaseIoTThing(_BaseShadow, ABC):
 
     def update_shadow(self, new_state: (dict, None) = None, clear_desired: bool = False):
         self.__update_lock.acquire()
+        state = self._full_state.get("reported", dict())
 
+        if new_state:
+            state.update(new_state)
         if self.__cache_new_state:
-            if new_state is None:
-                new_state = dict()
-            new_state = _update_nested_dict(new_state, self.__cache_new_state)
+            state = _update_nested_dict(state, self.__cache_new_state)
             self.__cache_new_state = dict()
 
-        update_state = {"state": {"reported": new_state}}
+        update_state = {"state": {"reported": state}}
         # ToDo remove all keys in new_state if already present in reported -> not getting updated
         if clear_desired:
             update_state["state"]["desired"] = _delete_values_if_present(self.desired, new_state, True)
@@ -287,6 +300,26 @@ class BaseIoTThing(_BaseShadow, ABC):
             self.__callback_updating_shadow,
             MQTT_OPERATION_TIMEOUT
         )
+
+    def __callback_get_shadow(self, *args):
+        if args[1] == "accepted":
+            payload = json.loads(args[0])
+            self._full_state = payload["state"]
+            self._meta = payload["metadata"]
+            self._version = payload["version"]
+            self._update_timestamp = payload["timestamp"]
+        else:
+            logging.critical(f"__callback_get_shadow: not parsed response: {args}")
+        self.__get_shadow_lock.release()
+
+    def _get_property_of_state(self, prop):
+        while self.__get_shadow_lock.locked():
+            sleep(0.1)
+        return deepcopy(self._full_state.get(prop, dict()))
+
+    def __get_shadow(self):
+        self.__get_shadow_lock.acquire()
+        self._shadow_handler.shadowGet(self.__callback_get_shadow, MQTT_OPERATION_TIMEOUT)
 
     def delete_shadow(self) -> None:
         self._shadow_handler.shadowDelete(self.__callback_deleting_shadow, MQTT_OPERATION_TIMEOUT)
@@ -300,13 +333,11 @@ class BaseIoTThing(_BaseShadow, ABC):
         return self.__shadow_handler
 
     def __callback_updating_shadow(self, payload, responseStatus, token):
-        # print(f"callback update shadow: {payload=}, {responseStatus=}, {token=}")
         if responseStatus == "accepted":
             payload = json.loads(payload)
             self._full_state["reported"] = _update_state_from_response(
                 self._get_property_of_state("reported"), payload["state"]["reported"]
             )
-            # print("successfully updated shadow file")
             logging.info("successfully updated shadow file")
         else:
             logging.critical(f"__callback_updating_shadow: not parsed response: {payload}")
