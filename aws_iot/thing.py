@@ -258,6 +258,7 @@ class BaseIoTThing(_BaseShadow, ABC):
 
     @reported.deleter
     def reported(self):
+        self.__update_lock.acquire()
         self._shadow_handler.shadowUpdate(
             json.dumps({"state": {"reported": None}}),
             self.__callback_updating_shadow,

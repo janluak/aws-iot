@@ -34,7 +34,7 @@ class ShadowThingNoDeleting(BaseIoTThing):
         pass
 
 
-@mark.skipif(reason='endpoint=="None"')
+@mark.skipif(condition='endpoint=="None"')
 def test_shadow_client_reported(test_env):
     sc = ShadowThing()
 
@@ -53,7 +53,7 @@ def test_shadow_client_reported(test_env):
     sc.disconnect()
 
 
-@mark.skipif(reason='endpoint=="None"')
+@mark.skipif(condition='endpoint=="None"')
 def test_smaller_update(test_env):
     sc = ShadowThing()
 
@@ -65,7 +65,7 @@ def test_smaller_update(test_env):
     sc.disconnect()
 
 
-@mark.skipif(reason='endpoint=="None"')
+@mark.skipif(condition='endpoint=="None"')
 def test_get_shadow_on_init(test_env):
     sc = ShadowThing()
 
@@ -80,6 +80,6 @@ def test_get_shadow_on_init(test_env):
 
 @mark.skip('ToDo')
 def test_update_from_response(test_env):
-    from aws_iot_handler.thing import _update_state_from_response
+    from aws_iot.thing import _update_state_from_response
     ShadowThing._full_state = {"reported": {"key": "value"}}
     assert _update_state_from_response(ShadowThing, "") == {"key": "value"}
