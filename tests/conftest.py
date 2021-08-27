@@ -19,15 +19,24 @@ class Config:
     TestThingName = "TestThing"
     AWS_REGION = "eu-central-1"
     IOT_ENDPOINT = "https://data.iot.eu-central-1.amazonaws.com"
+    AWS_ACCOUNT_ID = "1"
     STAGE = "DEV"
 
     @classmethod
     def items(cls):
-        return [(k, v) for k, v in cls.__dict__.items() if not k.startswith("__") and k not in ["items", "keys"]]
+        return [
+            (k, v)
+            for k, v in cls.__dict__.items()
+            if not k.startswith("__") and k not in ["items", "keys"]
+        ]
 
     @classmethod
     def keys(cls):
-        return {k for k in cls.__dict__.keys() if not k.startswith("__") and k not in ["items", "keys"]}
+        return {
+            k
+            for k in cls.__dict__.keys()
+            if not k.startswith("__") and k not in ["items", "keys"]
+        }
 
 
 @fixture
@@ -46,13 +55,15 @@ def test_env(reload_modules):
 @mock_iot
 def setup_thing(test_env, thing_name=Config.TestThingName):
     iot_raw_client = client("iot", region_name="eu-central-1")
-    iot_raw_client.create_thing(thingName=thing_name)
+    resp = iot_raw_client.create_thing(thingName=thing_name)
+    return resp["thingArn"]
 
 
 @fixture
 @mock_iotdata
 def iot_resource(setup_thing, thing_name=Config.TestThingName):
     iot_data_client = client("iot-data", region_name="eu-central-1")
-    iot_data_client.update_thing_shadow(thingName=thing_name,
-                                        payload='{"state": {"desired": null, "reported": null}}')
+    iot_data_client.update_thing_shadow(
+        thingName=thing_name, payload='{"state": {"desired": null, "reported": null}}'
+    )
     return iot_data_client

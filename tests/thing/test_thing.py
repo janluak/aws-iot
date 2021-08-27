@@ -1,85 +1,101 @@
 from pathlib import Path
-from pytest import mark
+from pytest import mark, fail
 from os import environ
-from aws_iot.thing import BaseIoTThing
+import logging
+import boto3
+from uuid import uuid4
+import json
+import time
+
+from aws_iot.thing import IoTThing
 
 
+account_id = "None"
 endpoint = "None"
 
 
-class ShadowThing(BaseIoTThing):
+class Thing(IoTThing):
     def __init__(self):
-        super(ShadowThing, self).__init__(
+        IoTThing.__init__(
+            self,
             environ["TestThingName"],
             environ["AWS_REGION"],
             endpoint=endpoint,
             cert_path=Path(Path(__file__).parent, "../certs"),
-            delete_shadow_on_init=True
+            delete_shadow_on_init=True,
         )
 
     def handle_delta(self, *args):
         pass
 
-
-class ShadowThingNoDeleting(BaseIoTThing):
-    def __init__(self):
-        super(ShadowThingNoDeleting, self).__init__(
-            environ["TestThingName"],
-            environ["AWS_REGION"],
-            endpoint=endpoint,
-            cert_path=Path(Path(__file__).parent, "../certs"),
-        )
-
-    def handle_delta(self, *args):
-        pass
+    def execute(self, job_document, job_id, version_number, execution_number):
+        logging.warning(str(job_document))
 
 
 @mark.skipif(condition='endpoint=="None"')
-def test_shadow_client_reported(test_env):
-    sc = ShadowThing()
+def test_thing(test_env, caplog):
+    begin_ts = time.time()
+    iot_client = boto3.client("iot", region_name=environ["AWS_REGION"])
 
-    sc.reported = {"new_state": 1}
-    assert sc.reported == {"new_state": 1}
-    assert sc._full_state == {"reported": {"new_state": 1}}
+    t = Thing()
 
-    del sc.reported
-    assert sc.reported == dict()
+    job_value = str(uuid4())
+    job_document = {"test": job_value}
+    iot_client.create_job(
+        jobId=job_value,
+        targets=[
+            f"arn:aws:iot:{environ['AWS_REGION']}:{account_id}:thing/{environ['TestThingName']}"
+        ],
+        document=json.dumps(job_document),
+    )
 
-    sc.update_shadow({"new_state": 2})
-    assert sc.reported == {"new_state": 2}
+    t.reported = {"new_state": 1}
+    assert t.reported == {"new_state": 1}
+    assert t._full_state == {"reported": {"new_state": 1}}
 
-    sc.update_shadow({"next": "more"})
-    assert sc.reported == {"new_state": 2, "next": "more"}
-    sc.disconnect()
+    del t.reported
+    assert t.reported == dict()
 
-
-@mark.skipif(condition='endpoint=="None"')
-def test_smaller_update(test_env):
-    sc = ShadowThing()
-
-    sc.update_shadow({"new_state": 2})
-    assert sc.reported == {"new_state": 2}
-
-    sc.update_shadow({"next": "more"})
-    assert sc.reported == {"new_state": 2, "next": "more"}
-    sc.disconnect()
+    while job_value not in caplog.text:
+        if time.time() > begin_ts + 25:
+            fail("job wasn't executed")
 
 
 @mark.skipif(condition='endpoint=="None"')
-def test_get_shadow_on_init(test_env):
-    sc = ShadowThing()
+def test_two_consecutive_jobs(test_env, caplog):
+    begin_ts = time.time()
+    iot_client = boto3.client("iot", region_name=environ["AWS_REGION"])
 
-    sc.update_shadow({"new_state": 2})
-    assert sc.reported == {"new_state": 2}
-    sc.disconnect()
+    jt = Thing()
 
-    scnd = ShadowThingNoDeleting()
-    assert scnd.reported != dict()
-    scnd.disconnect()
+    job_document1 = {"value": str(uuid4())}
 
+    iot_client.create_job(
+        jobId=str(uuid4()),
+        targets=[
+            f"arn:aws:iot:{environ['AWS_REGION']}:{account_id}:thing/{environ['TestThingName']}"
+        ],
+        document=json.dumps(job_document1),
+    )
 
-@mark.skip('ToDo')
-def test_update_from_response(test_env):
-    from aws_iot.thing import _update_state_from_response
-    ShadowThing._full_state = {"reported": {"key": "value"}}
-    assert _update_state_from_response(ShadowThing, "") == {"key": "value"}
+    # import threading
+    # threads = [i for i in threading.enumerate()]
+
+    while job_document1["value"] not in caplog.text:
+        if time.time() > begin_ts + 10:
+            fail("job wasn't executed")
+
+    time.sleep(3)
+    job_document2 = {"value": str(uuid4())}
+
+    iot_client.create_job(
+        jobId=str(uuid4()),
+        targets=[
+            f"arn:aws:iot:{environ['AWS_REGION']}:{account_id}:thing/{environ['TestThingName']}"
+        ],
+        document=json.dumps(job_document2),
+    )
+
+    while job_document2["value"] not in caplog.text:
+        if time.time() > begin_ts + 138:
+            fail("job wasn't executed")

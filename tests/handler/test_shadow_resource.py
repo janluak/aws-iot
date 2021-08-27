@@ -1,7 +1,5 @@
 from boto3 import client
-from moto import mock_iot, mock_iotdata
-from os.path import dirname, realpath
-from pytest import fixture
+from moto import mock_iotdata
 import json
 from os import environ
 
@@ -18,8 +16,8 @@ def test_get_type_from_resource(setup_thing):
         payload=json.dumps({"state": {"reported": test_state}}),
     )
 
-    from aws_iot.shadow.shadow_resource import iot_shadow_resource
-    from aws_iot.shadow.shadow_handler import IoTShadowHandler
+    from aws_iot.handler.shadow_resource import iot_shadow_resource
+    from aws_iot.handler import IoTShadowHandler
 
     assert issubclass(
         iot_shadow_resource[environ["TestThingName"]].__class__, IoTShadowHandler
@@ -35,6 +33,6 @@ def test_get_shadow_from_resource(setup_thing):
         payload=json.dumps({"state": {"reported": test_state}}),
     )
 
-    from aws_iot.shadow.shadow_resource import iot_shadow_resource
+    from aws_iot.handler.shadow_resource import iot_shadow_resource
 
     assert iot_shadow_resource[environ["TestThingName"]].reported == test_state

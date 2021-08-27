@@ -21,7 +21,8 @@ def _test_thing_shadow(iot_data_client, thing_name):
     assert shadow["version"] == 1
 
     iot_data_client.update_thing_shadow(
-        thingName=thing_name, payload=dumps(test_state),
+        thingName=thing_name,
+        payload=dumps(test_state),
     )
 
     shadow = loads(

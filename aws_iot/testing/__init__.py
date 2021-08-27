@@ -5,7 +5,12 @@ from moto import mock_iot, mock_iotdata
 from typing import Collection
 
 
-__all__ = ["setup_iot_things", "setup_mocked_iot_things", "clean_iot_shadows", "clean_mocked_iot_shadows"]
+__all__ = [
+    "setup_iot_things",
+    "setup_mocked_iot_things",
+    "clean_iot_shadows",
+    "clean_mocked_iot_shadows",
+]
 
 
 def _setup_iot_thing(region_name, thing_names):
@@ -36,16 +41,16 @@ def _clear_iot_shadow(region_name, thing_names):
 @fixture
 def setup_iot_things(region_name, thing_names):
     """
-        Creates iot_things
+    Creates iot_things
 
-        Parameters
-        ----------
-        thing_names : str, Collection
-            name(s) of the iot_things
-        region_name : str
-            the aws_region to clear the shadows in
+    Parameters
+    ----------
+    thing_names : str, Collection
+        name(s) of the iot_things
+    region_name : str
+        the aws_region to clear the shadows in
 
-        """
+    """
     _setup_iot_thing(region_name, thing_names)
 
 

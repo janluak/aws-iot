@@ -1,10 +1,10 @@
-from .shadow_handler import IoTShadowHandler
+from ._shadow import IoTShadowHandler
 
 
 __all__ = ["iot_shadow_resource"]
 
 
-class IoTResourceController:
+class IoTShadowResourceController:
     def __init__(self, endpoint_url: str = None):
         self.__iot_devices = dict()
         self.__endpoint_url = endpoint_url
@@ -16,7 +16,9 @@ class IoTResourceController:
         return self.__iot_devices[iot_device_name]
 
     def __create_shadow_connection(self, iot_device_name: str):
-        self.__iot_devices[iot_device_name] = IoTShadowHandler(iot_device_name, self.__endpoint_url)
+        self.__iot_devices[iot_device_name] = IoTShadowHandler(
+            iot_device_name, self.__endpoint_url
+        )
 
 
-iot_shadow_resource = IoTResourceController()
+iot_shadow_resource = IoTShadowResourceController()

@@ -3,17 +3,12 @@ from copy import deepcopy
 
 
 class _BaseShadow(ABC):
-    def __init__(self, thing_name):
-        self.__thing_name = thing_name
+    def __init__(self):
         self._full_state = dict()
         self._meta = dict()
 
         self._update_timestamp = int()
         self._version = int()
-
-    @property
-    def thing_name(self) -> str:
-        return self.__thing_name
 
     @property
     def update_timestamp(self) -> int:
