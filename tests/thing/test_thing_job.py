@@ -10,8 +10,8 @@ import time
 from aws_iot.thing import IoTJobThing
 
 
-account_id = "876169258212"
-endpoint = "at7c82lz6730l"
+account_id = "None"
+endpoint = "None"
 
 
 class JobThing(IoTJobThing):
@@ -35,7 +35,7 @@ def test_two_consecutive_jobs(test_env, caplog):
 
     jt = JobThing()
 
-    job_document1 = {"test": "1"}
+    job_document1 = {"value": "1"}
 
     iot_client.create_job(
         jobId=str(uuid4()),
@@ -45,12 +45,12 @@ def test_two_consecutive_jobs(test_env, caplog):
         document=json.dumps(job_document1),
     )
 
-    while len(caplog.messages) == 0:
-        if time.time() > begin_ts + 10:
+    while job_document1["value"] not in caplog.text:
+        if time.time() > begin_ts + 18:
             fail("job wasn't executed")
 
     time.sleep(3)
-    job_document2 = {"test": "2"}
+    job_document2 = {"value": "2"}
 
     iot_client.create_job(
         jobId=str(uuid4()),
@@ -60,13 +60,8 @@ def test_two_consecutive_jobs(test_env, caplog):
         document=json.dumps(job_document2),
     )
 
-    while len(caplog.messages) == 1:
-        if time.time() > begin_ts + 15:
-            fail("job wasn't executed")
+    while job_document2["value"] not in caplog.text:
+        if time.time() > begin_ts + 18:
+            fail("second job wasn't executed")
 
     jt.disconnect()
-
-    if str(job_document1) not in caplog.text:
-        fail("job wasn't executed")
-    if str(job_document2) not in caplog.text:
-        fail("second job not executed")

@@ -78,9 +78,6 @@ def test_two_consecutive_jobs(test_env, caplog):
         document=json.dumps(job_document1),
     )
 
-    # import threading
-    # threads = [i for i in threading.enumerate()]
-
     while job_document1["value"] not in caplog.text:
         if time.time() > begin_ts + 10:
             fail("job wasn't executed")
@@ -97,5 +94,5 @@ def test_two_consecutive_jobs(test_env, caplog):
     )
 
     while job_document2["value"] not in caplog.text:
-        if time.time() > begin_ts + 138:
+        if time.time() > begin_ts + 18:
             fail("job wasn't executed")

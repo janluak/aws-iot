@@ -56,11 +56,15 @@ class IoTJobThing(_BaseIoTThing, ABC):
 
     def __create_aws_mqtt_jobs_client(self):
         self.__jobs_client = AWSIoTMQTTThingJobsClient(
-            str(), thingName=self.thing_name, QoS=1, awsIoTMQTTClient=self.mqtt
+            str(),
+            thingName=self.thing_name,
+            QoS=1,
+            awsIoTMQTTClient=self.mqtt
         )
 
         self.__jobs_client.createJobSubscription(
-            self.__new_job_received, jobExecutionTopicType.JOB_NOTIFY_NEXT_TOPIC
+            self.__new_job_received,
+            jobExecutionTopicType.JOB_NOTIFY_NEXT_TOPIC
         )
         self.__jobs_client.createJobSubscription(
             self.__start_next_job_successfully_in_progress,
@@ -88,23 +92,39 @@ class IoTJobThing(_BaseIoTThing, ABC):
 
     def __start_next_job_successfully_in_progress(self, client, userdata, message):
         payload = json.loads(message.payload.decode("utf-8"))
+        job_document = payload["execution"]["jobDocument"]
+        job_id = payload["execution"]["jobId"]
+        job_version_number = payload["execution"]["versionNumber"]
+        job_execution_number = payload["execution"]["executionNumber"]
+
         if "execution" in payload:
-            execution = payload["execution"]
-            self.execute(
-                execution["jobDocument"],
-                execution["jobId"],
-                execution["versionNumber"],
-                execution["executionNumber"],
-            )
-            Thread(
-                target=self.__jobs_client.sendJobsUpdate,
-                kwargs={
-                    "jobId": execution["jobId"],
-                    "status": jobExecutionStatus.JOB_EXECUTION_SUCCEEDED,
-                    "expectedVersion": execution["versionNumber"],
-                    "executionNumber": execution["executionNumber"],
-                },
-            ).start()
+            try:
+                self.execute(
+                    job_document,
+                    job_id,
+                    job_version_number,
+                    job_execution_number,
+                )
+                Thread(
+                    target=self.__jobs_client.sendJobsUpdate,
+                    kwargs={
+                        "jobId": job_id,
+                        "status": jobExecutionStatus.JOB_EXECUTION_SUCCEEDED,
+                        "expectedVersion": job_version_number,
+                        "executionNumber": job_execution_number,
+                    },
+                ).start()
+            except Exception as e:
+                Thread(
+                    target=self.__jobs_client.sendJobsUpdate,
+                    kwargs={
+                        "jobId": job_id,
+                        "status": jobExecutionStatus.JOB_EXECUTION_FAILED,
+                        "expectedVersion": job_version_number,
+                        "executionNumber": job_execution_number,
+                    },
+                ).start()
+
         else:
             self.__jobs_done = True
 
@@ -126,7 +146,9 @@ class IoTJobThing(_BaseIoTThing, ABC):
         self.__jobs_rejected += 1
 
     def __attempt_start_next_job(self):
-        Thread(target=self.__jobs_client.sendJobsStartNext).start()
+        Thread(
+            target=self.__jobs_client.sendJobsStartNext
+        ).start()
 
     @property
     def jobs_done(self):

@@ -36,6 +36,9 @@ class _BaseIoTThing(_BaseIoT, ABC):
             directory of the certificates
 
         """
+        if self.__already_initiated:
+            return
+
         super(_BaseIoTThing, self).__init__(thing_name)
         self.__aws_region = aws_region
         self.__mqtt_endpoint = endpoint
@@ -45,6 +48,13 @@ class _BaseIoTThing(_BaseIoT, ABC):
         self._connected = False
 
         self.__create_mqtt_client()
+
+    @property
+    def __already_initiated(self):
+        if hasattr(self, "_connected"):
+            return True
+        else:
+            return False
 
     def __create_mqtt_client(self):
         self.__mqtt_client = AWSIoTMQTTClient(self.thing_name)

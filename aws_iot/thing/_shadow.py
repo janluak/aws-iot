@@ -235,7 +235,7 @@ class IoTShadowThing(_BaseIoTThing, _BaseShadow, ABC):
         self, new_state: (dict, None) = None, clear_desired: bool = False
     ):
         self.__update_lock.acquire()
-        state = self._full_state.get("reported", dict())
+        state = deepcopy(self._full_state.get("reported", dict()))
 
         if new_state:
             state.update(new_state)
@@ -243,18 +243,27 @@ class IoTShadowThing(_BaseIoTThing, _BaseShadow, ABC):
             state = _update_nested_dict(state, self.__cache_new_state)
             self.__cache_new_state = dict()
 
-        update_state = {"state": {"reported": state}}
-        # ToDo remove all keys in new_state if already present in reported -> not getting updated
+        update_state = {
+            "state": {
+                "reported": _delete_values_if_present(state, self._full_state.get("reported", dict()))
+            }
+        }
         if clear_desired:
             update_state["state"]["desired"] = _delete_values_if_present(
                 self.desired, new_state, True
             )
 
-        self._shadow_handler.shadowUpdate(
-            json.dumps(update_state),
-            self.__callback_updating_shadow,
-            MQTT_OPERATION_TIMEOUT,
-        )
+        if update_state != {
+            "state": {
+                "reported": self._full_state.get("reported", dict()),
+                "desired": self._full_state.get("desired", dict())
+            }
+        }:
+            self._shadow_handler.shadowUpdate(
+                json.dumps(update_state),
+                self.__callback_updating_shadow,
+                MQTT_OPERATION_TIMEOUT,
+            )
 
     def __callback_get_shadow(self, *args):
         if args[1] == "accepted":

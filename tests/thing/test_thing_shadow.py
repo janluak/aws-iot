@@ -4,7 +4,7 @@ from os import environ
 from aws_iot.thing import IoTShadowThing
 
 
-endpoint = "at7c82lz6730l"
+endpoint = "None"
 
 
 class ShadowThing(IoTShadowThing):
