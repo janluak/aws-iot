@@ -92,12 +92,12 @@ class IoTJobThing(_BaseIoTThing, ABC):
 
     def __start_next_job_successfully_in_progress(self, client, userdata, message):
         payload = json.loads(message.payload.decode("utf-8"))
-        job_document = payload["execution"]["jobDocument"]
-        job_id = payload["execution"]["jobId"]
-        job_version_number = payload["execution"]["versionNumber"]
-        job_execution_number = payload["execution"]["executionNumber"]
-
         if "execution" in payload:
+            job_document = payload["execution"]["jobDocument"]
+            job_id = payload["execution"]["jobId"]
+            job_version_number = payload["execution"]["versionNumber"]
+            job_execution_number = payload["execution"]["executionNumber"]
+
             try:
                 self.execute(
                     job_document,
