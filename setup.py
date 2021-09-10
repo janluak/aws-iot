@@ -5,11 +5,17 @@ If development mode (=changes in package code directly delivered to python) `pip
 
 from setuptools import setup, find_packages
 from aws_iot import __version__
+from pathlib import Path
 
 # https://python-packaging.readthedocs.io/en/latest/minimal.html
 
 with open("README.md", "r") as f:
     long_description = f.read()
+
+with open('requirements.txt') as f:
+    requirements = f.read().splitlines()
+with open('requirements-test.txt') as f:
+    requirements_test = f.read().splitlines()
 
 setup(
     name="aws_iot",
@@ -19,7 +25,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Jan Lukas Braje",
     author_email="aws_iot@getkahawa.com",
-    packages=find_packages(),
+    packages=find_packages(include="aws_iot"),
     python_requires=">=3.8",
     zip_safe=False,
     classifiers=[
@@ -30,6 +36,6 @@ setup(
         "Programming Language :: Python :: 3.8",
     ],
     # https://pypi.org/pypi?%3Aaction=list_classifiers
-    install_requires=["boto3", "AWSIoTPythonSDK"],
-    extra_require={"testing": ["pytest", "moto", "freezegun"]},
+    install_requires=requirements,
+    extra_require={"testing": requirements_test},
 )
