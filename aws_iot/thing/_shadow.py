@@ -83,6 +83,19 @@ def _delete_values_if_present(
     return origin
 
 
+def _delete_keys_if_values_equal(origin: dict, compare: dict) -> dict:
+    for key in origin.copy():
+        if isinstance(origin[key], dict) and key in compare:
+            origin[key] = _delete_values_if_present(origin[key], compare[key])
+        elif isinstance(origin[key], list):
+            for index, value in origin[key]:
+                origin[key][index] = _delete_values_if_present(origin[key][index], compare[key][index]) if len(compare[key]) > index else origin[key][index]
+        else:
+            if origin[key] == compare[key]:
+                del origin[key]
+    return origin
+
+
 def _update_state_from_response(reported_state, response):
     if response is None:
         return dict()
@@ -253,12 +266,15 @@ class IoTShadowThing(_BaseIoTThing, _BaseShadow, ABC):
                 self.desired, new_state, True
             )
 
-        if update_state != {
-            "state": {
-                "reported": self._full_state.get("reported", dict()),
-                "desired": self._full_state.get("desired", dict())
-            }
-        }:
+        if update_state := _delete_keys_if_values_equal(
+                update_state,
+                {
+                    "state": {
+                        "reported": self._full_state.get("reported", dict()),
+                        "desired": self._full_state.get("desired", dict())
+                    }
+                }
+        ) and update_state != {"state": dict()}:
             self._shadow_handler.shadowUpdate(
                 json.dumps(update_state),
                 self.__callback_updating_shadow,
