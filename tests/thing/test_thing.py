@@ -7,29 +7,31 @@ from uuid import uuid4
 import json
 import time
 
-from aws_iot.thing import IoTThing
-
 
 account_id = "None"
 endpoint = "None"
 
 
-class Thing(IoTThing):
-    def __init__(self):
-        IoTThing.__init__(
-            self,
-            environ["TestThingName"],
-            environ["AWS_REGION"],
-            endpoint=endpoint,
-            cert_path=Path(Path(__file__).parent, "../certs"),
-            delete_shadow_on_init=True,
-        )
+def create_thing():
+    from aws_iot.thing import IoTThing
 
-    def handle_delta(self, *args):
-        pass
+    class Thing(IoTThing):
+        def __init__(self):
+            IoTThing.__init__(
+                self,
+                environ["TestThingName"],
+                environ["AWS_REGION"],
+                endpoint=endpoint,
+                cert_path=Path(Path(__file__).parent, "../certs"),
+                delete_shadow_on_init=True,
+            )
 
-    def execute(self, job_document, job_id, version_number, execution_number):
-        logging.warning(str(job_document))
+        def handle_delta(self, *args):
+            pass
+
+        def execute(self, job_document, job_id, version_number, execution_number):
+            logging.warning(str(job_document))
+    return Thing
 
 
 @mark.skipif(condition='endpoint=="None"')
@@ -37,7 +39,7 @@ def test_thing(test_env, caplog):
     begin_ts = time.time()
     iot_client = boto3.client("iot", region_name=environ["AWS_REGION"])
 
-    t = Thing()
+    t = create_thing()()
 
     job_value = str(uuid4())
     job_document = {"test": job_value}
@@ -66,7 +68,7 @@ def test_two_consecutive_jobs(test_env, caplog):
     begin_ts = time.time()
     iot_client = boto3.client("iot", region_name=environ["AWS_REGION"])
 
-    jt = Thing()
+    jt = create_thing()()
 
     job_document1 = {"value": str(uuid4())}
 

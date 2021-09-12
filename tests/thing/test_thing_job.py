@@ -7,25 +7,28 @@ from uuid import uuid4
 import json
 import time
 
-from aws_iot.thing import IoTJobThing
-
 
 account_id = "None"
 endpoint = "None"
 
 
-class JobThing(IoTJobThing):
-    def __init__(self):
-        IoTJobThing.__init__(
-            self,
-            environ["TestThingName"],
-            environ["AWS_REGION"],
-            endpoint=endpoint,
-            cert_path=Path(Path(__file__).parent, "../certs"),
-        )
+def create_job_thing():
+    from aws_iot.thing import IoTJobThing
 
-    def execute(self, job_document, job_id, version_number, execution_number):
-        logging.warning(str(job_document))
+    class JobThing(IoTJobThing):
+        def __init__(self):
+            IoTJobThing.__init__(
+                self,
+                environ["TestThingName"],
+                environ["AWS_REGION"],
+                endpoint=endpoint,
+                cert_path=Path(Path(__file__).parent, "../certs"),
+            )
+
+        def execute(self, job_document, job_id, version_number, execution_number):
+            logging.warning(str(job_document))
+
+    return JobThing
 
 
 @mark.skipif(condition='endpoint=="None"')
@@ -33,7 +36,7 @@ def test_two_consecutive_jobs(test_env, caplog):
     begin_ts = time.time()
     iot_client = boto3.client("iot", region_name=environ["AWS_REGION"])
 
-    jt = JobThing()
+    jt = create_job_thing()()
 
     job_document1 = {"value": "1"}
 
