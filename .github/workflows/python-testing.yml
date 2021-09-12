@@ -29,6 +29,8 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: add aws certificates for thing
         run: |
+          ls .
+          ls tests
           mkdir tests/certs
           echo -e ${{ secrets.AWS_ROOT_CA }} >> tests/certs/root-ca.pem
           echo -e ${{ secrets.AWS_THING_CERTIFICATE }} >> tests/certs/id-certificate.pem.crt
