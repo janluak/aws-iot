@@ -30,8 +30,10 @@ jobs:
       - name: add aws certificates for thing
         run: |
           ls .
-          ls tests
+          ls ./tests
+          echo "0"
           mkdir tests/certs
+          echo "1"
           echo -e ${{ secrets.AWS_ROOT_CA }} >> tests/certs/root-ca.pem
           echo -e ${{ secrets.AWS_THING_CERTIFICATE }} >> tests/certs/id-certificate.pem.crt
           echo -e ${{ secrets.AWS_THING_PRIVATE_KEY }} >> tests/certs/id-private.pem.key
