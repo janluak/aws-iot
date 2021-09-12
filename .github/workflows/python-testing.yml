@@ -30,14 +30,14 @@ jobs:
       - name: add aws certificates for thing
         run: |
           mkdir tests/certs
-          "echo -e $AWS_ROOT_CA >> tests/certs/root-ca.pem"
-          "echo -e $AWS_THING_CERTIFICATE >> tests/certs/id-certificate.pem.crt"
-          "echo -e $AWS_THING_PRIVATE_KEY >> tests/certs/id-private.pem.key"
-          "echo -e $AWS_TEST_THING_CONFIG >> tests/certs/config.json"
+          "echo -e '$AWS_ROOT_CA' >> tests/certs/root-ca.pem"
+          "echo -e '$AWS_THING_CERTIFICATE' >> tests/certs/id-certificate.pem.crt"
+          "echo -e '$AWS_THING_PRIVATE_KEY' >> tests/certs/id-private.pem.key"
+          "echo -e '$AWS_TEST_THING_CONFIG' >> tests/certs/config.json"
         env:
-          AWS_ROOT_CA: ${{ secrets.AWS_ROOT_CA }}
-          AWS_THING_CERTIFICATE: ${{ secrets.AWS_THING_CERTIFICATE }}
-          AWS_THING_PRIVATE_KEY: ${{ secrets.AWS_THING_PRIVATE_KEY }}
-          AWS_TEST_THING_CONFIG: ${{ secrets.AWS_TEST_THING_CONFIG }}
+          AWS_ROOT_CA: '${{ secrets.AWS_ROOT_CA }}'
+          AWS_THING_CERTIFICATE: '${{ secrets.AWS_THING_CERTIFICATE }}'
+          AWS_THING_PRIVATE_KEY: '${{ secrets.AWS_THING_PRIVATE_KEY }}'
+          AWS_TEST_THING_CONFIG: '${{ secrets.AWS_TEST_THING_CONFIG }}'
       - name: test with pytest
         run: pytest
