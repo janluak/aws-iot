@@ -4,7 +4,7 @@ If development mode (=changes in package code directly delivered to python) `pip
 """
 
 from setuptools import setup, find_packages
-from aws_iot import __version__
+from src.aws_iot import __version__
 from pathlib import Path
 
 # https://python-packaging.readthedocs.io/en/latest/minimal.html
@@ -25,7 +25,8 @@ setup(
     long_description_content_type="text/markdown",
     author="Jan Lukas Braje",
     author_email="aws_iot@getkahawa.com",
-    packages=find_packages(include="aws_iot"),
+    packages=find_packages("./src"),
+    package_dir={"": "./src"},
     python_requires=">=3.8",
     zip_safe=False,
     classifiers=[
@@ -37,5 +38,5 @@ setup(
     ],
     # https://pypi.org/pypi?%3Aaction=list_classifiers
     install_requires=requirements,
-    extra_require={"testing": requirements_test},
+    tests_require=requirements_test,
 )
