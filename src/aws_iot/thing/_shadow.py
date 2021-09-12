@@ -266,20 +266,23 @@ class IoTShadowThing(_BaseIoTThing, _BaseShadow, ABC):
                 self.desired, new_state, True
             )
 
-        if update_state := _delete_keys_if_values_equal(
-                update_state,
-                {
-                    "state": {
-                        "reported": self._full_state.get("reported", dict()),
-                        "desired": self._full_state.get("desired", dict())
-                    }
+        update_state = _delete_keys_if_values_equal(
+            update_state,
+            {
+                "state": {
+                    "reported": self._full_state.get("reported", dict()),
+                    "desired": self._full_state.get("desired", dict())
                 }
-        ) and update_state != {"state": dict()}:
+            }
+        )
+        if update_state != {"state": dict()} or _is_parent_function("__create_aws_handler"):
             self._shadow_handler.shadowUpdate(
                 json.dumps(update_state),
                 self.__callback_updating_shadow,
                 MQTT_OPERATION_TIMEOUT,
             )
+        else:
+            self.__update_lock.release()
 
     def __callback_get_shadow(self, *args):
         if args[1] == "accepted":
@@ -320,7 +323,7 @@ class IoTShadowThing(_BaseIoTThing, _BaseShadow, ABC):
         if responseStatus == "accepted":
             payload = json.loads(payload)
             self._full_state["reported"] = _update_state_from_response(
-                self._get_property_of_state("reported"), payload["state"]["reported"]
+                self._get_property_of_state("reported"), payload.get("state", dict()).get("reported", dict())
             )
             logging.info("successfully updated shadow file")
         else:
