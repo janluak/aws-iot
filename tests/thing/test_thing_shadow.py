@@ -3,9 +3,6 @@ from pytest import mark
 from os import environ
 
 
-endpoint = "None"
-
-
 def create_shadow_thing_with_clear_shadow():
     from aws_iot.thing import IoTShadowThing
 
@@ -14,7 +11,7 @@ def create_shadow_thing_with_clear_shadow():
             super(ShadowThingDeletingOnInit, self).__init__(
                 environ["TestThingName"],
                 environ["AWS_REGION"],
-                endpoint=endpoint,
+                endpoint=environ["IOT_ENDPOINT"],
                 cert_path=Path(Path(__file__).parent, "../certs"),
                 delete_shadow_on_init=True,
             )
@@ -33,7 +30,7 @@ def create_shadow_thing_with_consistent_shadow():
             super(ShadowThingNoDeleting, self).__init__(
                 environ["TestThingName"],
                 environ["AWS_REGION"],
-                endpoint=endpoint,
+                endpoint=environ["IOT_ENDPOINT"],
                 cert_path=Path(Path(__file__).parent, "../certs"),
             )
 
@@ -43,8 +40,7 @@ def create_shadow_thing_with_consistent_shadow():
     return ShadowThingNoDeleting
 
 
-@mark.skipif(condition='endpoint=="None"')
-def test_shadow_client_reported(test_env):
+def test_shadow_client_reported(test_env_real):
     sc = create_shadow_thing_with_clear_shadow()()
 
     sc.reported = {"new_state": 1}
@@ -62,8 +58,7 @@ def test_shadow_client_reported(test_env):
     sc.disconnect()
 
 
-@mark.skipif(condition='endpoint=="None"')
-def test_smaller_update(test_env):
+def test_smaller_update(test_env_real):
     sc = create_shadow_thing_with_clear_shadow()()
 
     sc.update_shadow({"new_state": 2})
@@ -74,8 +69,7 @@ def test_smaller_update(test_env):
     sc.disconnect()
 
 
-@mark.skipif(condition='endpoint=="None"')
-def test_get_shadow_on_init(test_env):
+def test_get_shadow_on_init(test_env_real):
     sc = create_shadow_thing_with_clear_shadow()()
 
     sc.update_shadow({"new_state": 2})
@@ -88,7 +82,7 @@ def test_get_shadow_on_init(test_env):
 
 
 @mark.skip("ToDo")
-def test_update_from_response(test_env):
+def test_update_from_response(test_env_real):
     from aws_iot.thing._shadow import _update_state_from_response
     shadow_thing = create_shadow_thing_with_clear_shadow()
 

@@ -1,7 +1,7 @@
 from os import environ, chdir, getcwd
 from pathlib import Path
 from pytest import fixture
-import sys
+import sys, json
 from moto import mock_iot, mock_iotdata
 from boto3 import client
 
@@ -15,13 +15,7 @@ def reload_modules():
             del sys.modules[key]
 
 
-class Config:
-    TestThingName = "TestThing"
-    AWS_REGION = "eu-central-1"
-    IOT_ENDPOINT = "https://data.iot.eu-central-1.amazonaws.com"
-    AWS_ACCOUNT_ID = "1"
-    STAGE = "DEV"
-
+class _Config:
     @classmethod
     def items(cls):
         return [
@@ -39,21 +33,44 @@ class Config:
         }
 
 
+class ConfigMoto(_Config):
+    TestThingName = "TestThing"
+    AWS_REGION = "eu-central-1"
+    IOT_ENDPOINT = "https://data.iot.eu-central-1.amazonaws.com"
+    AWS_ACCOUNT_ID = "1"
+    STAGE = "DEV"
+
+
 @fixture
-def test_env(reload_modules):
-    for key, value in Config.items():
+def test_env_moto(reload_modules):
+    for key, value in ConfigMoto.items():
         environ[key] = value
     cwd = getcwd()
     chdir(Path(__file__).parent)
-    yield Config
+    yield ConfigMoto
     chdir(cwd)
-    for key in Config.keys():
+    for key in ConfigMoto.keys():
+        del environ[key]
+
+
+@fixture
+def test_env_real(reload_modules):
+    cwd = getcwd()
+    chdir(Path(__file__).parent)
+    with open("certs/config.json") as f:
+        config = json.load(f)
+    for key, value in config.items():
+        if key not in environ:
+            environ[key] = value
+    yield config
+    chdir(cwd)
+    for key in config.keys():
         del environ[key]
 
 
 @fixture
 @mock_iot
-def setup_thing(test_env, thing_name=Config.TestThingName):
+def setup_thing(test_env_moto, thing_name=ConfigMoto.TestThingName):
     iot_raw_client = client("iot", region_name="eu-central-1")
     resp = iot_raw_client.create_thing(thingName=thing_name)
     return resp["thingArn"]
@@ -61,7 +78,7 @@ def setup_thing(test_env, thing_name=Config.TestThingName):
 
 @fixture
 @mock_iotdata
-def iot_resource(setup_thing, thing_name=Config.TestThingName):
+def iot_resource(setup_thing, thing_name=ConfigMoto.TestThingName):
     iot_data_client = client("iot-data", region_name="eu-central-1")
     iot_data_client.update_thing_shadow(
         thingName=thing_name, payload='{"state": {"desired": null, "reported": null}}'

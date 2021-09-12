@@ -1,15 +1,11 @@
 from pathlib import Path
-from pytest import mark, fail
+from pytest import fail
 from os import environ
 import logging
 import boto3
 from uuid import uuid4
 import json
 import time
-
-
-account_id = "None"
-endpoint = "None"
 
 
 def create_thing():
@@ -21,7 +17,7 @@ def create_thing():
                 self,
                 environ["TestThingName"],
                 environ["AWS_REGION"],
-                endpoint=endpoint,
+                endpoint=environ["IOT_ENDPOINT"],
                 cert_path=Path(Path(__file__).parent, "../certs"),
                 delete_shadow_on_init=True,
             )
@@ -34,8 +30,7 @@ def create_thing():
     return Thing
 
 
-@mark.skipif(condition='endpoint=="None"')
-def test_thing(test_env, caplog):
+def test_thing(test_env_real, caplog):
     begin_ts = time.time()
     iot_client = boto3.client("iot", region_name=environ["AWS_REGION"])
 
@@ -46,7 +41,7 @@ def test_thing(test_env, caplog):
     iot_client.create_job(
         jobId=job_value,
         targets=[
-            f"arn:aws:iot:{environ['AWS_REGION']}:{account_id}:thing/{environ['TestThingName']}"
+            f"arn:aws:iot:{environ['AWS_REGION']}:{environ['AWS_ACCOUNT_ID']}:thing/{environ['TestThingName']}"
         ],
         document=json.dumps(job_document),
     )
@@ -63,8 +58,7 @@ def test_thing(test_env, caplog):
             fail("job wasn't executed")
 
 
-@mark.skipif(condition='endpoint=="None"')
-def test_two_consecutive_jobs(test_env, caplog):
+def test_two_consecutive_jobs(test_env_real, caplog):
     begin_ts = time.time()
     iot_client = boto3.client("iot", region_name=environ["AWS_REGION"])
 
@@ -75,7 +69,7 @@ def test_two_consecutive_jobs(test_env, caplog):
     iot_client.create_job(
         jobId=str(uuid4()),
         targets=[
-            f"arn:aws:iot:{environ['AWS_REGION']}:{account_id}:thing/{environ['TestThingName']}"
+            f"arn:aws:iot:{environ['AWS_REGION']}:{environ['AWS_ACCOUNT_ID']}:thing/{environ['TestThingName']}"
         ],
         document=json.dumps(job_document1),
     )
@@ -90,7 +84,7 @@ def test_two_consecutive_jobs(test_env, caplog):
     iot_client.create_job(
         jobId=str(uuid4()),
         targets=[
-            f"arn:aws:iot:{environ['AWS_REGION']}:{account_id}:thing/{environ['TestThingName']}"
+            f"arn:aws:iot:{environ['AWS_REGION']}:{environ['AWS_ACCOUNT_ID']}:thing/{environ['TestThingName']}"
         ],
         document=json.dumps(job_document2),
     )
