@@ -57,11 +57,12 @@ def test_env_moto(reload_modules):
 def test_env_real(reload_modules):
     cwd = getcwd()
     chdir(Path(__file__).parent)
-    with open("certs/config.json") as f:
-        config = json.load(f)
-    for key, value in config.items():
-        if key not in environ:
-            environ[key] = value
+    if Path(Path(__file__).parent, "certs/config.json").exists():
+        with open("certs/config.json") as f:
+            config = json.load(f)
+        for key, value in config.items():
+            if key not in environ:
+                environ[key] = value
     yield config
     chdir(cwd)
     for key in config.keys():

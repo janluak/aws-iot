@@ -33,11 +33,14 @@ jobs:
           echo "$AWS_ROOT_CA" >> tests/certs/root-ca.pem
           echo "$AWS_THING_CERTIFICATE" >> tests/certs/id-certificate.pem.crt
           echo "${{ secrets.AWS_THING_PRIVATE_KEY }}" >> tests/certs/id-private.pem.key
-          echo "$AWS_TEST_THING_CONFIG" >> tests/certs/config.json
         env:
           AWS_ROOT_CA: ${{ secrets.AWS_ROOT_CA }}
           AWS_THING_CERTIFICATE: ${{ secrets.AWS_THING_CERTIFICATE }}
           AWS_THING_PRIVATE_KEY: ${{ secrets.AWS_THING_PRIVATE_KEY }}
-          AWS_TEST_THING_CONFIG: ${{ secrets.AWS_TEST_THING_CONFIG }}
       - name: test with pytest
         run: pytest
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          IOT_ENDPOINT: ${{ secrets.IOT_ENDPOINT }}
+          TestThingName: ${{ secrets.TESTTHINGNAME }}
