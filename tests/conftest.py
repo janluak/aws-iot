@@ -63,10 +63,10 @@ def test_env_real(reload_modules):
         for key, value in config.items():
             if key not in environ:
                 environ[key] = value
-    yield
-    chdir(cwd)
-    for key in config.keys():
-        del environ[key]
+        yield config
+        chdir(cwd)
+        for key in config.keys():
+            del environ[key]
 
 
 @fixture
