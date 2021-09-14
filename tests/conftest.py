@@ -43,7 +43,10 @@ class ConfigMoto(_Config):
 
 @fixture
 def test_env_moto(reload_modules):
+    stash = dict()
     for key, value in ConfigMoto.items():
+        if env_key := environ.pop(key, None):
+            stash[key] = env_key
         environ[key] = value
     cwd = getcwd()
     chdir(Path(__file__).parent)
@@ -51,6 +54,8 @@ def test_env_moto(reload_modules):
     chdir(cwd)
     for key in ConfigMoto.keys():
         del environ[key]
+    for key in stash:
+        environ[key] = stash[key]
 
 
 @fixture
