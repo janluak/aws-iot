@@ -1,7 +1,6 @@
-from ._base import _BaseIoTThing, MQTT_OPERATION_TIMEOUT
+from .connector import IoTThingConnector, MQTT_OPERATION_TIMEOUT
 from .._base_shadow import _BaseShadow
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTShadowClient
-from AWSIoTPythonSDK.core.shadow.deviceShadow import deviceShadow
 from abc import abstractmethod, ABC
 from threading import Lock
 from pathlib import Path
@@ -13,7 +12,7 @@ import inspect
 from collections import Mapping
 
 
-__all__ = ["IoTShadowThing"]
+__all__ = ["ThingShadowHandler"]
 
 
 def _is_parent_function(parent_func_name: str) -> bool:
@@ -119,18 +118,19 @@ def _update_state_from_response(reported_state, response):
     return reported_state
 
 
-class IoTShadowThing(_BaseIoTThing, _BaseShadow, ABC):
+class ThingShadowHandler(_BaseShadow, ABC):
     """
     Custom AWS thing shadow taking care of the underlying functions used in AWS shadows
     """
 
     def __init__(
         self,
-        thing_name: str,
-        aws_region: str,
-        endpoint: str,
+        thing_name: str = None,
+        aws_region: str = None,
+        endpoint: str = None,
         cert_path: (str, Path) = None,
         delete_shadow_on_init: bool = False,
+        aws_thing_connector: IoTThingConnector = None,
     ):
         """
         Parameters
@@ -146,9 +146,16 @@ class IoTShadowThing(_BaseIoTThing, _BaseShadow, ABC):
             directory of the certificates
         delete_shadow_on_init : bool
             if True: shadow is deleted on every new instantiation
+        aws_thing_connector : IoTThingConnector
+            mqtt connection handler to AWS
 
         """
-        _BaseIoTThing.__init__(self, thing_name, aws_region, endpoint, cert_path)
+        if aws_thing_connector:
+            self.__thing_connector = aws_thing_connector
+        else:
+            self.__thing_connector = IoTThingConnector(thing_name, aws_region, endpoint, cert_path)
+            self.__thing_connector.connect()
+
         _BaseShadow.__init__(self)
         self.__delete_shadow_on_init = delete_shadow_on_init
 
@@ -164,13 +171,17 @@ class IoTShadowThing(_BaseIoTThing, _BaseShadow, ABC):
             self.__get_shadow()
         # self.log.success("finished initialization of object " + self.__class__.__name__)
 
+    @property
+    def thing(self):
+        return self.__thing_connector
+
     def __create_aws_mqtt_shadow_client(self):
         """
         Initializes the AWSIoTMQTTShadowClient mqtt broker
 
         """
         self.__shadow_client = AWSIoTMQTTShadowClient(
-            self.thing_name, awsIoTMQTTClient=self.mqtt
+            self.thing.thing_name, awsIoTMQTTClient=self.thing.mqtt
         )
 
     def __create_aws_handler(self):
@@ -178,15 +189,15 @@ class IoTShadowThing(_BaseIoTThing, _BaseShadow, ABC):
         Create the handler for the AWS IoT shadow handler
         """
 
-        self.__shadow_handler = self._shadow_client.createShadowHandlerWithName(
-            shadowName=self.thing_name, isPersistentSubscribe=True
+        self.__shadow_handler = self.__shadow_client.createShadowHandlerWithName(
+            shadowName=self.thing.thing_name, isPersistentSubscribe=True
         )
 
         if _is_parent_function("__init__") and self.__delete_shadow_on_init:
             self.delete_shadow()
             self.update_shadow(dict())
 
-        self._shadow_handler.shadowRegisterDeltaCallback(self.__parse_delta)
+        self.__shadow_handler.shadowRegisterDeltaCallback(self.__parse_delta)
 
     def __wait_for_possible_updates_finished(self):
         while self.__update_lock.locked():
@@ -222,7 +233,7 @@ class IoTShadowThing(_BaseIoTThing, _BaseShadow, ABC):
     @reported.deleter
     def reported(self):
         self.__update_lock.acquire()
-        self._shadow_handler.shadowUpdate(
+        self.__shadow_handler.shadowUpdate(
             json.dumps({"state": {"reported": None}}),
             self.__callback_updating_shadow,
             MQTT_OPERATION_TIMEOUT,
@@ -276,7 +287,7 @@ class IoTShadowThing(_BaseIoTThing, _BaseShadow, ABC):
             }
         )
         if update_state != {"state": dict()} or _is_parent_function("__create_aws_handler"):
-            self._shadow_handler.shadowUpdate(
+            self.__shadow_handler.shadowUpdate(
                 json.dumps(update_state),
                 self.__callback_updating_shadow,
                 MQTT_OPERATION_TIMEOUT,
@@ -302,22 +313,14 @@ class IoTShadowThing(_BaseIoTThing, _BaseShadow, ABC):
 
     def __get_shadow(self):
         self.__get_shadow_lock.acquire()
-        self._shadow_handler.shadowGet(
+        self.__shadow_handler.shadowGet(
             self.__callback_get_shadow, MQTT_OPERATION_TIMEOUT
         )
 
     def delete_shadow(self) -> None:
-        self._shadow_handler.shadowDelete(
+        self.__shadow_handler.shadowDelete(
             self.__callback_deleting_shadow, MQTT_OPERATION_TIMEOUT
         )
-
-    @property
-    def _shadow_client(self) -> AWSIoTMQTTShadowClient:
-        return self.__shadow_client
-
-    @property
-    def _shadow_handler(self) -> deviceShadow:
-        return self.__shadow_handler
 
     def __callback_updating_shadow(self, payload, responseStatus, token):
         if responseStatus == "accepted":
@@ -331,9 +334,11 @@ class IoTShadowThing(_BaseIoTThing, _BaseShadow, ABC):
                 f"__callback_updating_shadow: not parsed response: {payload}"
             )
 
-        self.__update_lock.release()
-        if "delta" in responseStatus:
-            self.__parse_delta(payload, responseStatus, token)
+        try:
+            if "delta" in responseStatus:
+                self.__parse_delta(payload, responseStatus, token)
+        finally:
+            self.__update_lock.release()
 
     def __callback_deleting_shadow(self, *args):
         """

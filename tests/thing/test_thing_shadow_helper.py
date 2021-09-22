@@ -2,7 +2,7 @@ from copy import deepcopy
 
 
 def test_parent_function():
-    from aws_iot.thing._shadow import _is_parent_function
+    from aws_iot.thing.shadow import _is_parent_function
 
     def calling_function():
         return _is_parent_function(test_parent_function.__name__)
@@ -13,7 +13,7 @@ def test_parent_function():
 
 
 def test_delete_values_delta_none():
-    from aws_iot.thing._shadow import _delete_values_if_present
+    from aws_iot.thing.shadow import _delete_values_if_present
 
     origin = {"key1": "value1"}
     compare = {"key2": "value2"}
@@ -22,7 +22,7 @@ def test_delete_values_delta_none():
 
 
 def test_delete_values_delete_all():
-    from aws_iot.thing._shadow import _delete_values_if_present
+    from aws_iot.thing.shadow import _delete_values_if_present
 
     origin = {"key1": "value1"}
     compare = {"key1": "value1", "key2": "value2"}
@@ -31,7 +31,7 @@ def test_delete_values_delete_all():
 
 
 def test_delete_values_delete_nested():
-    from aws_iot.thing._shadow import _delete_values_if_present
+    from aws_iot.thing.shadow import _delete_values_if_present
 
     origin = {"key1": {"sub_key1": "value1"}}
     compare = {"key1": {"sub_key1": "value1"}, "key2": "value2"}
@@ -40,7 +40,7 @@ def test_delete_values_delete_nested():
 
 
 def test_delete_values_delete_different_nested_none():
-    from aws_iot.thing._shadow import _delete_values_if_present
+    from aws_iot.thing.shadow import _delete_values_if_present
 
     origin = {"key1": {"sub_key1": "value1"}}
     compare = {"key1": {"sub_key1": "value1", "sub_key2": "value2"}, "key2": "value3"}
@@ -49,7 +49,7 @@ def test_delete_values_delete_different_nested_none():
 
 
 def test_delete_values_delete_different_nested_still_diff():
-    from aws_iot.thing._shadow import _delete_values_if_present
+    from aws_iot.thing.shadow import _delete_values_if_present
 
     origin = {"key1": {"sub_key1": "value1", "sub_key3": "value4"}}
     compare = {"key1": {"sub_key1": "value1", "sub_key2": "value2"}, "key2": "value3"}
@@ -60,7 +60,7 @@ def test_delete_values_delete_different_nested_still_diff():
 
 
 def test_delete_values_delete_list():
-    from aws_iot.thing._shadow import _delete_values_if_present
+    from aws_iot.thing.shadow import _delete_values_if_present
 
     origin = {"key1": ["value1"]}
     compare = {"key1": ["value1", "value3"], "key2": "value2"}
@@ -69,7 +69,7 @@ def test_delete_values_delete_list():
 
 
 def test_delete_values_delete_nested_list():
-    from aws_iot.thing._shadow import _delete_values_if_present
+    from aws_iot.thing.shadow import _delete_values_if_present
 
     origin = {"key1": {"sub_key1": ["value1", "value2"], "sub_key3": "value4"}}
     compare = {"key1": {"sub_key1": ["value1"]}, "key2": "value2"}
@@ -80,7 +80,7 @@ def test_delete_values_delete_nested_list():
 
 
 def test_update_state_from_empty():
-    from aws_iot.thing._shadow import _update_state_from_response
+    from aws_iot.thing.shadow import _update_state_from_response
 
     old_reported_state = dict()
     update_reported_state = {"key": "value"}
@@ -92,7 +92,7 @@ def test_update_state_from_empty():
 
 
 def test_update_state_from_empty_nested():
-    from aws_iot.thing._shadow import _update_state_from_response
+    from aws_iot.thing.shadow import _update_state_from_response
 
     old_reported_state = dict()
     update_reported_state = {"key": {"sub_dict": "value"}}
@@ -104,7 +104,7 @@ def test_update_state_from_empty_nested():
 
 
 def test_update_state_new_keys():
-    from aws_iot.thing._shadow import _update_state_from_response
+    from aws_iot.thing.shadow import _update_state_from_response
 
     old_reported_state = {"key": "value"}
     update_reported_state = {"new_key": "value"}
@@ -116,7 +116,7 @@ def test_update_state_new_keys():
 
 
 def test_update_state_update_keys():
-    from aws_iot.thing._shadow import _update_state_from_response
+    from aws_iot.thing.shadow import _update_state_from_response
 
     old_reported_state = {"key": "value"}
     update_reported_state = {"key": "new_value"}
@@ -127,7 +127,7 @@ def test_update_state_update_keys():
 
 
 def test_update_state_update_some_keys():
-    from aws_iot.thing._shadow import _update_state_from_response
+    from aws_iot.thing.shadow import _update_state_from_response
 
     old_reported_state = {"key": "value", "next_key": "next_value"}
     update_reported_state = {"key": "new_value"}
@@ -139,7 +139,7 @@ def test_update_state_update_some_keys():
 
 
 def test_update_state_update_nested_keys():
-    from aws_iot.thing._shadow import _update_state_from_response
+    from aws_iot.thing.shadow import _update_state_from_response
 
     old_reported_state = {
         "key": {"sub_dict": {"sub_sub1": "value", "sub_sub2": "value"}},
@@ -154,7 +154,7 @@ def test_update_state_update_nested_keys():
 
 
 def test_delete_state():
-    from aws_iot.thing._shadow import _update_state_from_response
+    from aws_iot.thing.shadow import _update_state_from_response
 
     old_reported_state = {"key": "value", "next_key": "next_value"}
     update_reported_state = {"key": None}
@@ -165,7 +165,7 @@ def test_delete_state():
 
 
 def test_delete_state_update_nested_keys():
-    from aws_iot.thing._shadow import _update_state_from_response
+    from aws_iot.thing.shadow import _update_state_from_response
 
     old_reported_state = {
         "key": {"sub_dict": {"sub_sub1": "value", "sub_sub2": "value"}},
@@ -180,7 +180,7 @@ def test_delete_state_update_nested_keys():
 
 
 def test_delete_all_reported():
-    from aws_iot.thing._shadow import _update_state_from_response
+    from aws_iot.thing.shadow import _update_state_from_response
 
     old_reported_state = {"key": "value"}
     update_reported_state = None
@@ -220,7 +220,7 @@ reference_dict = {
 
 
 def test_update_nested_key_reassignment():
-    from aws_iot.thing._shadow import _update_nested_dict
+    from aws_iot.thing.shadow import _update_nested_dict
 
     origin_dict = deepcopy(reference_dict)
     verify_dict = deepcopy(reference_dict)
@@ -235,7 +235,7 @@ def test_update_nested_key_reassignment():
 
 
 def test_update_nested_key_mutable():
-    from aws_iot.thing._shadow import _update_nested_dict
+    from aws_iot.thing.shadow import _update_nested_dict
 
     origin_dict = deepcopy(reference_dict)
     verify_dict = deepcopy(reference_dict)
@@ -250,7 +250,7 @@ def test_update_nested_key_mutable():
 
 
 def test_update_part_of_nested_key_mutable():
-    from aws_iot.thing._shadow import _update_nested_dict
+    from aws_iot.thing.shadow import _update_nested_dict
 
     origin_dict = deepcopy(reference_dict)
     verify_dict = deepcopy(reference_dict)

@@ -58,8 +58,8 @@ def test_env_moto(reload_modules):
         environ[key] = stash[key]
 
 
-@fixture
-def test_env_real(reload_modules):
+@fixture(scope="session")
+def test_env_real():
     cwd = getcwd()
     chdir(Path(__file__).parent)
     if Path(Path(__file__).parent, "certs/config.json").exists():

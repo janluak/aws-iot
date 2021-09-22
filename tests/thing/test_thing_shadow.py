@@ -1,47 +1,28 @@
 from pathlib import Path
-from pytest import mark
+from . import mqtt_connection
+from pytest import mark, fixture
 from os import environ
 
 
-def create_shadow_thing_with_clear_shadow():
-    from aws_iot.thing import IoTShadowThing
+TIMEOUT = 10
 
-    class ShadowThingDeletingOnInit(IoTShadowThing):
-        def __init__(self):
-            super(ShadowThingDeletingOnInit, self).__init__(
-                environ["TestThingName"],
-                environ["AWS_REGION"],
-                endpoint=environ["IOT_ENDPOINT"],
-                cert_path=Path(Path(__file__).parent, "../certs"),
-                delete_shadow_on_init=True,
-            )
 
+@fixture
+def shadow_thing_handler():
+    from aws_iot.thing import ThingShadowHandler
+
+    class ShadowThing(ThingShadowHandler):
         def handle_delta(self, *args):
             pass
 
-    return ShadowThingDeletingOnInit
+    yield ShadowThing
 
 
-def create_shadow_thing_with_consistent_shadow():
-    from aws_iot.thing import IoTShadowThing
-
-    class ShadowThingNoDeleting(IoTShadowThing):
-        def __init__(self):
-            super(ShadowThingNoDeleting, self).__init__(
-                environ["TestThingName"],
-                environ["AWS_REGION"],
-                endpoint=environ["IOT_ENDPOINT"],
-                cert_path=Path(Path(__file__).parent, "../certs"),
-            )
-
-        def handle_delta(self, *args):
-            pass
-
-    return ShadowThingNoDeleting
-
-
-def test_shadow_client_reported(test_env_real):
-    sc = create_shadow_thing_with_clear_shadow()()
+def test_shadow_client_reported(mqtt_connection, shadow_thing_handler):
+    sc = shadow_thing_handler(
+        aws_thing_connector=mqtt_connection,
+        delete_shadow_on_init=True,
+    )
 
     sc.reported = {"new_state": 1}
     assert sc.reported == {"new_state": 1}
@@ -55,36 +36,61 @@ def test_shadow_client_reported(test_env_real):
 
     sc.update_shadow({"next": "more"})
     assert sc.reported == {"new_state": 2, "next": "more"}
-    sc.disconnect()
+    sc.thing.disconnect()
 
 
-def test_smaller_update(test_env_real):
-    sc = create_shadow_thing_with_clear_shadow()()
+def test_simple_update(mqtt_connection, shadow_thing_handler):
+    sc = shadow_thing_handler(
+        aws_thing_connector=mqtt_connection,
+        delete_shadow_on_init=True,
+    )
 
     sc.update_shadow({"new_state": 2})
     assert sc.reported == {"new_state": 2}
 
     sc.update_shadow({"next": "more"})
     assert sc.reported == {"new_state": 2, "next": "more"}
-    sc.disconnect()
+    sc.thing.disconnect()
 
 
-def test_get_shadow_on_init(test_env_real):
-    sc = create_shadow_thing_with_clear_shadow()()
+def test_get_shadow_on_init(mqtt_connection, shadow_thing_handler):
+    sc = shadow_thing_handler(
+        aws_thing_connector=mqtt_connection,
+        delete_shadow_on_init=True,
+
+    )
 
     sc.update_shadow({"new_state": 2})
     assert sc.reported == {"new_state": 2}
-    sc.disconnect()
+    sc.thing.disconnect()
 
-    scnd = create_shadow_thing_with_consistent_shadow()()
+    scnd = shadow_thing_handler(
+        environ["TestThingName"],
+        environ["AWS_REGION"],
+        endpoint=environ["IOT_ENDPOINT"],
+        cert_path=Path(Path(__file__).parent, "../certs"),
+    )
     assert scnd.reported != dict()
-    scnd.disconnect()
+    scnd.thing.disconnect()
 
 
-@mark.skip("ToDo")
-def test_update_from_response(test_env_real):
-    from aws_iot.thing._shadow import _update_state_from_response
-    shadow_thing = create_shadow_thing_with_clear_shadow()
+def test_context_of_connector_shadow_handler(test_env_real, shadow_thing_handler):
+    from aws_iot.thing import IoTThingConnector
 
-    shadow_thing._full_state = {"reported": {"key": "value"}}
-    assert _update_state_from_response(shadow_thing, "") == {"key": "value"}
+    with IoTThingConnector(
+            environ["TestThingName"],
+            environ["AWS_REGION"],
+            endpoint=environ["IOT_ENDPOINT"],
+            cert_path=Path(Path(__file__).parent, "../certs")
+    ) as connector:
+        sc = shadow_thing_handler(
+            delete_shadow_on_init=True,
+            aws_thing_connector=connector
+        )
+
+        sc.update_shadow({"new_state": 2})
+        assert sc.reported == {"new_state": 2}
+
+        sc.update_shadow({"next": "more"})
+        assert sc.reported == {"new_state": 2, "next": "more"}
+

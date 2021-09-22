@@ -1,4 +1,4 @@
-from ._base import _BaseIoTThing
+from .connector import IoTThingConnector, QUALITY_OF_SERVICE_AT_LEAST_ONCE
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTThingJobsClient
 from AWSIoTPythonSDK.core.jobs.thingJobManager import (
     jobExecutionTopicType,
@@ -11,39 +11,47 @@ from threading import Thread
 import json
 
 
-__all__ = ["IoTJobThing"]
+__all__ = ["ThingJobHandler"]
 
 
-class IoTJobThing(_BaseIoTThing, ABC):
+class ThingJobHandler(ABC):
     """
     Custom AWS thing taking care of the underlying functions used in AWS IoT jobs
     """
 
     def __init__(
         self,
-        thing_name: str,
-        aws_region: str,
-        endpoint: str,
+        thing_name: str = None,
+        aws_region: str = None,
+        endpoint: str = None,
         cert_path: (str, Path) = None,
         execute_open_jobs_on_init: bool = True,
+        aws_thing_connector: IoTThingConnector = None,
     ):
         """
         Parameters
         ----------
         thing_name : str
-            the name of the AWS thing.
+            the name of the AWS thing
             needs to be identical to the name of an AWS thing as configured in the management console
         aws_region : str
             region of AWS thing management
         endpoint : str
             MQTT enpoint of the desired AWS account
-        cert_path : str, Path, optional
+        cert_path : str, Path
             directory of the certificates
         execute_open_jobs_on_init : bool, optional
             if open jobs for the thing should get executed on init or left pending
+        aws_thing_connector : IoTThingConnector
+            mqtt connection handler to AWS
 
         """
-        _BaseIoTThing.__init__(self, thing_name, aws_region, endpoint, cert_path)
+
+        if aws_thing_connector:
+            self.__thing_connector = aws_thing_connector
+        else:
+            self.__thing_connector = IoTThingConnector(thing_name, aws_region, endpoint, cert_path)
+            self.__thing_connector.connect()
 
         self.__jobs_done = True
         self.__jobs_started = int()
@@ -54,12 +62,16 @@ class IoTJobThing(_BaseIoTThing, ABC):
         if execute_open_jobs_on_init:
             self.__attempt_start_next_job()
 
+    @property
+    def thing(self):
+        return self.__thing_connector
+
     def __create_aws_mqtt_jobs_client(self):
         self.__jobs_client = AWSIoTMQTTThingJobsClient(
             str(),
-            thingName=self.thing_name,
-            QoS=1,
-            awsIoTMQTTClient=self.mqtt
+            thingName=self.thing.thing_name,
+            QoS=QUALITY_OF_SERVICE_AT_LEAST_ONCE,
+            awsIoTMQTTClient=self.thing.mqtt
         )
 
         self.__jobs_client.createJobSubscription(

@@ -10,7 +10,4 @@ class _BaseIoT:
         return self.__thing_name
 
 
-def _format_mqtt_endpoint(endpoint, region):
-    endpoint = endpoint.split("-")[0]
-    endpoint = endpoint.split("/")[-1]
-    return f"{endpoint}-ats.iot.{region}.amazonaws.com"
+
