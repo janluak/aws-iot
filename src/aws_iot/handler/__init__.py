@@ -1,1 +1,1 @@
-from ._handler import IoTHandler, IoTShadowHandler, IoTJobHandler
+from .handler import IoTHandler, IoTShadowHandler, IoTJobHandler

@@ -1,28 +1,46 @@
-from .. import _BaseIoT
 from .._base_shadow import _BaseShadow
 from os import environ
-from boto3 import client
 import json
 
 __all__ = ["IoTShadowHandler"]
 
 
-_client_data = {"region_name": environ["AWS_REGION"]}
-if "IOT_ENDPOINT" in environ:
-    _client_data.update({"endpoint_url": environ["IOT_ENDPOINT"]})
-_iot_data_client = client("iot-data", **_client_data)
+IOT_ENDPOINT_URL = "https://{endpoint_id}.iot.{region_name}.amazonaws.com"
 
 
-class IoTShadowHandler(_BaseIoT, _BaseShadow):
-    def __init__(self, thing_name: str, endpoint_url: str = None):
-        super(IoTShadowHandler, self).__init__(thing_name)
-        if endpoint_url:
-            global _iot_data_client
-            _iot_data_client = client(
-                "iot-data", region_name=environ["AWS_REGION"], endpoint_url=endpoint_url
+def _format_endpoint_url(endpoint: str, region_name: str):
+    return IOT_ENDPOINT_URL.format(
+        endpoint_id=endpoint.split("-")[0].split("/")[-1],
+        region_name=region_name
+    )
+
+
+class IoTShadowHandler(_BaseShadow):
+    def __init__(self, thing_name: str, endpoint: str = None, region_name: str = None, client=None):
+        self.__thing_name = thing_name
+        self.__region_name = environ["AWS_REGION"] if region_name is None else region_name
+
+        if client:
+            self.__client = client
+        elif endpoint:
+            self.__client = client(
+                "iot-data",
+                region_name=self.__region_name,
+                endpoint_url=_format_endpoint_url(endpoint, self.__region_name)
             )
+        else:
+            from ._iot_data_client import _iot_data_client
+            self.__client = _iot_data_client
 
-        super().__init__(thing_name)
+        super(IoTShadowHandler, self).__init__()
+
+    @property
+    def thing_name(self) -> str:
+        return self.__thing_name
+
+    @property
+    def region_name(self) -> str:
+        return self.__region_name
 
     @property
     def state(self):
@@ -49,7 +67,7 @@ class IoTShadowHandler(_BaseIoT, _BaseShadow):
         self.__set_new_desired_state(update_values)
 
     def __refresh(self):
-        response = _iot_data_client.get_thing_shadow(thingName=self.thing_name)
+        response = self.__client.get_thing_shadow(thingName=self.thing_name)
         payload = json.loads(response["payload"].read())
         self._full_state = payload["state"]
         self._meta = payload["metadata"]
@@ -69,7 +87,7 @@ class IoTShadowHandler(_BaseIoT, _BaseShadow):
         if not isinstance(new_desired, (dict, type(None))):
             raise TypeError("new desired state must be of type dict")
 
-        response = _iot_data_client.update_thing_shadow(
+        response = self.__client.update_thing_shadow(
             thingName=self.thing_name,
             payload=json.dumps({"state": {"desired": new_desired}}),
         )

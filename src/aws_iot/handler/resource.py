@@ -1,4 +1,4 @@
-from ._handler import IoTHandler
+from .handler import IoTHandler
 
 
 __all__ = ["iot_resource"]
@@ -18,7 +18,7 @@ class IoTResourceController:
 
     def __create_mqtt_connection(self, iot_device_name: str):
         self.__iot_devices[iot_device_name] = IoTHandler(
-            iot_device_name, account_id=self.__account_id, endpoint_url=self.__endpoint_url
+            iot_device_name, account_id=self.__account_id, endpoint=self.__endpoint_url
         )
 
 
