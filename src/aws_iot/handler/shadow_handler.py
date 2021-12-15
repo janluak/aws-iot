@@ -1,4 +1,4 @@
-from .._base_shadow import _BaseShadow
+from ..base_shadow import BaseShadow
 from os import environ
 import json
 
@@ -10,15 +10,22 @@ IOT_ENDPOINT_URL = "https://{endpoint_id}.iot.{region_name}.amazonaws.com"
 
 def _format_endpoint_url(endpoint: str, region_name: str):
     return IOT_ENDPOINT_URL.format(
-        endpoint_id=endpoint.split("-")[0].split("/")[-1],
-        region_name=region_name
+        endpoint_id=endpoint.split("-")[0].split("/")[-1], region_name=region_name
     )
 
 
-class IoTShadowHandler(_BaseShadow):
-    def __init__(self, thing_name: str, endpoint: str = None, region_name: str = None, client=None):
+class IoTShadowHandler(BaseShadow):
+    def __init__(
+        self,
+        thing_name: str,
+        endpoint: str = None,
+        region_name: str = None,
+        client=None,
+    ):
         self.__thing_name = thing_name
-        self.__region_name = environ["AWS_REGION"] if region_name is None else region_name
+        self.__region_name = (
+            environ["AWS_REGION"] if region_name is None else region_name
+        )
 
         if client:
             self.__client = client
@@ -26,10 +33,11 @@ class IoTShadowHandler(_BaseShadow):
             self.__client = client(
                 "iot-data",
                 region_name=self.__region_name,
-                endpoint_url=_format_endpoint_url(endpoint, self.__region_name)
+                endpoint_url=_format_endpoint_url(endpoint, self.__region_name),
             )
         else:
             from ._iot_data_client import _iot_data_client
+
             self.__client = _iot_data_client
 
         super(IoTShadowHandler, self).__init__()

@@ -92,3 +92,17 @@ def iot_resource(setup_thing, thing_name=ConfigMoto.TestThingName):
         thingName=thing_name, payload='{"state": {"desired": null, "reported": null}}'
     )
     return iot_data_client
+
+
+@fixture
+def iot_connector(test_env_real):
+    from src.aws_iot.thing.connector import IoTThingConnector
+
+    c = IoTThingConnector(
+        environ["TestThingName"],
+        environ["AWS_REGION"],
+        environ["IOT_ENDPOINT"],
+        Path(Path(__file__).parent, "certs"),
+    )
+    with c:
+        yield c

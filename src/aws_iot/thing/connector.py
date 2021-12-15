@@ -1,6 +1,5 @@
 import AWSIoTPythonSDK.exception.AWSIoTExceptions
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
-from abc import ABC
 from pathlib import Path
 import logging
 from glob import glob
@@ -15,10 +14,10 @@ __all__ = [
     "STABLE_CONNECTION_TIME_SECOND",
     "STANDARD_CERT_PATH",
     "QUALITY_OF_SERVICE_AT_LEAST_ONCE",
-    "QUALITY_OF_SERVICE_AT_MOST_ONCE"
+    "QUALITY_OF_SERVICE_AT_MOST_ONCE",
 ]
 
-IOT_ENDPOINT_URL = '{endpoint_id}-ats.iot.{region_name}.amazonaws.com'
+IOT_ENDPOINT_URL = "{endpoint_id}-ats.iot.{region_name}.amazonaws.com"
 
 MQTT_OPERATION_TIMEOUT = 5
 MQTT_DISCONNECT_TIMEOUT = 10
@@ -32,18 +31,18 @@ QUALITY_OF_SERVICE_AT_LEAST_ONCE = 1
 STANDARD_CERT_PATH = "./certs"
 
 
-class IoTThingConnector(ABC):
+class IoTThingConnector:
     def __init__(
-            self,
-            thing_name: str,
-            aws_region: str,
-            endpoint: str,
-            cert_path: (str, Path) = STANDARD_CERT_PATH,
-            operation_timeout: int = MQTT_OPERATION_TIMEOUT,
-            base_reconnect_quiet_time_second: int = BASE_RECONNECT_QUIET_TIME_SECOND,
-            max_reconnect_quiet_time_second: int = MAX_RECONNECT_QUIET_TIME_SECOND,
-            stable_connection_time_second: int = STABLE_CONNECTION_TIME_SECOND,
-            disconnect_timeout: int = MQTT_DISCONNECT_TIMEOUT
+        self,
+        thing_name: str,
+        aws_region: str,
+        endpoint: str,
+        cert_path: (str, Path) = STANDARD_CERT_PATH,
+        operation_timeout: int = MQTT_OPERATION_TIMEOUT,
+        base_reconnect_quiet_time_second: int = BASE_RECONNECT_QUIET_TIME_SECOND,
+        max_reconnect_quiet_time_second: int = MAX_RECONNECT_QUIET_TIME_SECOND,
+        stable_connection_time_second: int = STABLE_CONNECTION_TIME_SECOND,
+        disconnect_timeout: int = MQTT_DISCONNECT_TIMEOUT,
     ):
         """
 
@@ -96,7 +95,7 @@ class IoTThingConnector(ABC):
     def __configure_mqtt_client(self):
         hostname = IOT_ENDPOINT_URL.format(
             endpoint_id=self.__mqtt_endpoint.split("-")[0].split("/")[-1],
-            region_name=self.__aws_region
+            region_name=self.__aws_region,
         )
 
         self.mqtt.configureEndpoint(
@@ -116,12 +115,10 @@ class IoTThingConnector(ABC):
         self.mqtt.configureAutoReconnectBackoffTime(
             self.__mqtt_base_reconnect_quiet_time_second,
             self.__mqtt_max_reconnect_quiet_time_second,
-            self.__mqtt_stable_connection_time_second
+            self.__mqtt_stable_connection_time_second,
         )
         self.mqtt.configureConnectDisconnectTimeout(self.__mqtt_disconnect_timeout)
-        self.mqtt.configureMQTTOperationTimeout(
-            self.__mqtt_operation_timeout
-        )
+        self.mqtt.configureMQTTOperationTimeout(self.__mqtt_operation_timeout)
 
     def connect(self):
         self.mqtt.connect()
@@ -137,8 +134,10 @@ class IoTThingConnector(ABC):
         logging.info("disconnected from AWS")
 
     def publish(
-            self, topic: str, payload: [dict, list, str, float, int],
-            service_level: int = QUALITY_OF_SERVICE_AT_LEAST_ONCE
+        self,
+        topic: str,
+        payload: [dict, list, str, float, int],
+        service_level: int = QUALITY_OF_SERVICE_AT_LEAST_ONCE,
     ):
         return self.mqtt.publish(topic, json.dumps(payload), service_level)
 

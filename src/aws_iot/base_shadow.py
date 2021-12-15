@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 
 
-class _BaseShadow(ABC):
+class BaseShadow(ABC):
     def __init__(self):
         self._full_state = dict()
         self._meta = dict()
@@ -18,7 +18,7 @@ class _BaseShadow(ABC):
     def shadow_version(self) -> int:
         return self._version
 
-    def _get_property_of_state(self, prop):
+    def _get_property_of_state(self, prop) -> dict:
         return deepcopy(self._full_state.get(prop, dict()))
 
     @property
@@ -31,17 +31,17 @@ class _BaseShadow(ABC):
         pass
 
     @property
-    def reported(self):
+    def reported(self) -> dict:
         return self._get_property_of_state("reported")
 
     @property
-    def desired(self):
+    def desired(self) -> dict:
         return self._get_property_of_state("desired")
 
     @property
-    def delta(self):
+    def delta(self) -> dict:
         return self._get_property_of_state("delta")
 
     @property
-    def meta(self):
+    def meta(self) -> dict:
         return deepcopy(self._meta)

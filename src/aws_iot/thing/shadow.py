@@ -1,7 +1,7 @@
 from .connector import IoTThingConnector, MQTT_OPERATION_TIMEOUT
-from .._base_shadow import _BaseShadow
+from ..base_shadow import BaseShadow
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTShadowClient
-from abc import abstractmethod, ABC
+from typing import Callable
 from threading import Lock
 from pathlib import Path
 import json
@@ -88,7 +88,11 @@ def _delete_keys_if_values_equal(origin: dict, compare: dict) -> dict:
             origin[key] = _delete_values_if_present(origin[key], compare[key])
         elif isinstance(origin[key], list):
             for index, value in origin[key]:
-                origin[key][index] = _delete_values_if_present(origin[key][index], compare[key][index]) if len(compare[key]) > index else origin[key][index]
+                origin[key][index] = (
+                    _delete_values_if_present(origin[key][index], compare[key][index])
+                    if len(compare[key]) > index
+                    else origin[key][index]
+                )
         else:
             if origin[key] == compare[key]:
                 del origin[key]
@@ -118,7 +122,7 @@ def _update_state_from_response(reported_state, response):
     return reported_state
 
 
-class ThingShadowHandler(_BaseShadow, ABC):
+class ThingShadowHandler(BaseShadow):
     """
     Custom AWS thing shadow taking care of the underlying functions used in AWS shadows
     """
@@ -129,6 +133,7 @@ class ThingShadowHandler(_BaseShadow, ABC):
         aws_region: str = None,
         endpoint: str = None,
         cert_path: (str, Path) = None,
+        delta_handler: Callable = None,
         delete_shadow_on_init: bool = False,
         aws_thing_connector: IoTThingConnector = None,
     ):
@@ -144,19 +149,26 @@ class ThingShadowHandler(_BaseShadow, ABC):
             MQTT enpoint of the desired AWS account
         cert_path : str, Path
             directory of the certificates
+        delta_handler: Callable
+            function handling any delta updates from AWS cloud shadow
         delete_shadow_on_init : bool
             if True: shadow is deleted on every new instantiation
         aws_thing_connector : IoTThingConnector
             mqtt connection handler to AWS
 
         """
+        self.__delta_handler = (
+            delta_handler if delta_handler else self._default_delta_handler
+        )
         if aws_thing_connector:
             self.__thing_connector = aws_thing_connector
         else:
-            self.__thing_connector = IoTThingConnector(thing_name, aws_region, endpoint, cert_path)
+            self.__thing_connector = IoTThingConnector(
+                thing_name, aws_region, endpoint, cert_path
+            )
             self.__thing_connector.connect()
 
-        _BaseShadow.__init__(self)
+        BaseShadow.__init__(self)
         self.__delete_shadow_on_init = delete_shadow_on_init
 
         self.__cache_new_state = dict()
@@ -239,9 +251,24 @@ class ThingShadowHandler(_BaseShadow, ABC):
             MQTT_OPERATION_TIMEOUT,
         )
 
-    @abstractmethod
-    def handle_delta(self, delta: dict, responseStatus: str, token: str):
-        pass
+    def _default_delta_handler(self, delta: dict, responseStatus: str, token: str):
+        logging.warning(
+            f"unhandled delta of shadow: {delta}, {responseStatus}, {token}"
+        )
+        self.update_shadow(delta)
+
+    def delta_handler_register(self, func: Callable):
+        s = inspect.signature(func).parameters
+        if len(s.items()) < 1:
+            raise TypeError("delta_handler function must at least accept one argument")
+        elif len(s.items()) > 3:
+            raise TypeError(
+                "delta_handler function must not accept more than three arguments"
+            )
+        self.__delta_handler = func
+
+    def delta_handler_unregister(self):
+        self.__delta_handler = self._default_delta_handler
 
     def __parse_delta(self, payload, responseStatus, token):
         payload = json.loads(payload)
@@ -250,7 +277,7 @@ class ThingShadowHandler(_BaseShadow, ABC):
         if not self.desired:
             self._full_state["desired"] = dict()
         self._full_state["desired"].update(payload["state"])
-        self.handle_delta(payload["state"], responseStatus, token)
+        self.__delta_handler(payload["state"], responseStatus, token)
 
     def cache_new_state(self, new_state: dict):
         self.__cache_new_state = _update_nested_dict(self.__cache_new_state, new_state)
@@ -269,7 +296,9 @@ class ThingShadowHandler(_BaseShadow, ABC):
 
         update_state = {
             "state": {
-                "reported": _delete_values_if_present(state, self._full_state.get("reported", dict()))
+                "reported": _delete_values_if_present(
+                    state, self._full_state.get("reported", dict())
+                )
             }
         }
         if clear_desired:
@@ -282,11 +311,13 @@ class ThingShadowHandler(_BaseShadow, ABC):
             {
                 "state": {
                     "reported": self._full_state.get("reported", dict()),
-                    "desired": self._full_state.get("desired", dict())
+                    "desired": self._full_state.get("desired", dict()),
                 }
-            }
+            },
         )
-        if update_state != {"state": dict()} or _is_parent_function("__create_aws_handler"):
+        if update_state != {"state": dict()} or _is_parent_function(
+            "__create_aws_handler"
+        ):
             self.__shadow_handler.shadowUpdate(
                 json.dumps(update_state),
                 self.__callback_updating_shadow,
@@ -326,7 +357,8 @@ class ThingShadowHandler(_BaseShadow, ABC):
         if responseStatus == "accepted":
             payload = json.loads(payload)
             self._full_state["reported"] = _update_state_from_response(
-                self._get_property_of_state("reported"), payload.get("state", dict()).get("reported", dict())
+                self._get_property_of_state("reported"),
+                payload.get("state", dict()).get("reported", dict()),
             )
             logging.info("successfully updated shadow file")
         else:

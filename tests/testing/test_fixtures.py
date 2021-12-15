@@ -2,7 +2,12 @@ from pytest import mark
 from moto import mock_iotdata
 from boto3 import client
 from json import dumps, loads
-from aws_iot.testing import *
+from os import environ
+
+environ["AWS_REGION"] = "eu-central-1"
+environ["IOT_TEST_THING_NAMES"] = "TestThing1,TestThing2,AndAnotherTestThing"
+
+from aws_iot.testing.fixture import *
 
 
 test_state = {"state": {"desired": {"testData": "1"}}}
@@ -35,7 +40,9 @@ def _test_thing_shadow(iot_data_client, thing_name):
     assert isinstance(shadow["timestamp"], int)
 
 
-@mark.parametrize(("thing_names", "region_name"), [(test_thing_names[0], "us-west-1")])
+@mark.parametrize(
+    ("thing_names", "region_name"), [(test_thing_names[0], "eu-central-1")]
+)
 @mock_iotdata
 def test_single_thing(clean_mocked_iot_shadows, thing_names, region_name):
     iot_data_client = client("iot-data", region_name=region_name)
@@ -43,7 +50,7 @@ def test_single_thing(clean_mocked_iot_shadows, thing_names, region_name):
     _test_thing_shadow(iot_data_client, thing_names)
 
 
-@mark.parametrize(("thing_names", "region_name"), [(test_thing_names, "us-west-1")])
+@mark.parametrize(("thing_names", "region_name"), [(test_thing_names, "eu-central-1")])
 @mock_iotdata
 def test_multiple_things(clean_mocked_iot_shadows, thing_names, region_name):
     iot_data_client = client("iot-data", region_name=region_name)

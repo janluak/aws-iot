@@ -6,20 +6,33 @@ __all__ = ["IoTJobHandler"]
 
 
 class IoTJobHandler:
-    def __init__(self, thing_name: str, account_id: str = None, region_name: str = None, client=None):
+    def __init__(
+        self,
+        thing_name: str,
+        account_id: str = None,
+        region_name: str = None,
+        client=None,
+    ):
         self.__thing_name = thing_name
-        self.__region_name = environ["AWS_REGION"] if region_name is None else region_name
+        self.__region_name = (
+            environ["AWS_REGION"] if region_name is None else region_name
+        )
         try:
-            self.__account_id = environ["AWS_ACCOUNT_ID"] if account_id is None else account_id
+            self.__account_id = (
+                environ["AWS_ACCOUNT_ID"] if account_id is None else account_id
+            )
         except KeyError:
-            raise ValueError("missing account id:\n"
-                             "for using IoTJobHandler account id must either be given as argument or "
-                             "defined in os.environ as AWS_ACCOUNT_ID")
+            raise ValueError(
+                "missing account id:\n"
+                "for using IoTJobHandler account id must either be given as argument or "
+                "defined in os.environ as AWS_ACCOUNT_ID"
+            )
 
         if client:
             self.__client = client
         else:
             from ._iot_client import _iot_client
+
             self.__client = _iot_client
 
     @property

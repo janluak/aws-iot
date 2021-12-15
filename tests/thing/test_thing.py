@@ -8,34 +8,28 @@ import json
 import time
 
 
-TIMEOUT = 12
+TIMEOUT = 15
 
 executed_job_ids = set()
 
 
-@fixture
-def thing_handler():
+def execute(job_document, job_id, version_number, execution_number):
+    executed_job_ids.add(job_id)
+
+
+def test_thing(test_env_real):
     from aws_iot.thing import ThingHandler
 
-    class Thing(ThingHandler):
-        def handle_delta(self, *args):
-            pass
-
-        def execute(self, job_document, job_id, version_number, execution_number):
-            executed_job_ids.add(job_id)
-    return Thing
-
-
-def test_thing(test_env_real, thing_handler):
     begin_ts = time.time()
     iot_client = boto3.client("iot", region_name=environ["AWS_REGION"])
 
-    t = thing_handler(
+    t = ThingHandler(
         environ["TestThingName"],
         environ["AWS_REGION"],
         endpoint=environ["IOT_ENDPOINT"],
         cert_path=Path(Path(__file__).parent, "../certs"),
         delete_shadow_on_init=True,
+        execution_function=execute,
     )
 
     job_id = str(uuid4())
@@ -61,17 +55,20 @@ def test_thing(test_env_real, thing_handler):
     del t
 
 
-def test_two_consecutive_jobs(test_env_real, thing_handler):
+def test_two_consecutive_jobs(test_env_real):
+    from aws_iot.thing import ThingHandler
+
     begin_ts = time.time()
     iot_client = boto3.client("iot", region_name=environ["AWS_REGION"])
 
-    t = thing_handler(
+    t = ThingHandler(
         environ["TestThingName"],
         environ["AWS_REGION"],
         endpoint=environ["IOT_ENDPOINT"],
         cert_path=Path(Path(__file__).parent, "../certs"),
         delete_shadow_on_init=True,
     )
+    t.execution_register(execute)
 
     job_document1 = {"job_id": str(uuid4())}
 
@@ -97,8 +94,9 @@ def test_two_consecutive_jobs(test_env_real, thing_handler):
         ],
         document=json.dumps(job_document2),
     )
+    begin_ts = time.time()
 
     while job_document2["job_id"] not in executed_job_ids:
-        if time.time() > begin_ts + TIMEOUT + 3:
+        if time.time() > begin_ts + TIMEOUT:
             fail("job wasn't executed")
     del t

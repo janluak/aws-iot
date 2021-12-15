@@ -12,9 +12,9 @@ from pathlib import Path
 with open("README.md", "r") as f:
     long_description = f.read()
 
-with open('requirements.txt') as f:
+with open("requirements.txt") as f:
     requirements = f.read().splitlines()
-with open('requirements-test.txt') as f:
+with open("requirements-test.txt") as f:
     requirements_test = f.read().splitlines()
 
 setup(
