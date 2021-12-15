@@ -24,8 +24,13 @@ __all__ = ["MockConnector", "MockThingHandler", "MockShadowHandler", "MockJobHan
 class MockMQTT(AWSIoTMQTTClient):
     def __init__(self):
         for i in self.__dir__():
-            if not i.startswith("_"):
+            if not i.startswith("_") and i != "reset_mock":
                 self.__setattr__(i, MagicMock())
+
+    def reset_mock(self):
+        for i in self.__dir__():
+            if isinstance(self.__getattribute__(i), MagicMock):
+                self.__getattribute__(i).reset_mock()
 
 
 class MockConnector(IoTThingConnector):
@@ -54,6 +59,12 @@ class MockConnector(IoTThingConnector):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.disconnect()
+
+    def reset_mock(self):
+        self.mqtt.reset_mock()
+        for i in self.__dir__():
+            if isinstance(self.__getattribute__(i), MagicMock):
+                self.__getattribute__(i).reset_mock()
 
 
 class MockJobHandler(ThingJobHandler):
@@ -87,6 +98,22 @@ class MockJobHandler(ThingJobHandler):
         if execution_function:
             self.execution_register(execution_function, execute_open_jobs_on_init)
 
+    @property
+    def thing(self):
+        return self.__thing_connector
+
+    @property
+    def jobs_done(self):
+        return self.__jobs_done
+
+    @property
+    def job_stats(self):
+        return {
+            "jobsStarted": self.__jobs_started,
+            "jobsSucceeded": self.__jobs_succeeded,
+            "jobsRejected": self.__jobs_rejected,
+        }
+
     def execution_register(self, func: Callable, execute_open_jobs: bool = True):
         s = inspect.signature(func).parameters
         if len(s.items()) < 1:
@@ -102,6 +129,13 @@ class MockJobHandler(ThingJobHandler):
     def execution_unregister(self):
         self.__remove_job_subscription()
         self.__execution = None
+
+    def reset_mock(self):
+        for i in self.__dir__():
+            if i.startswith(f"_{self.__class__.__base__}"):
+                continue
+            if isinstance(self.__getattribute__(i), MagicMock):
+                self.__getattribute__(i).reset_mock()
 
 
 class MockShadowHandler(ThingShadowHandler):
@@ -151,6 +185,10 @@ class MockShadowHandler(ThingShadowHandler):
         del self.reported
 
     @property
+    def desired(self) -> dict:
+        return self._full_state.get("state", dict()).get("desired", dict())
+
+    @property
     def reported(self) -> dict:
         return self._full_state.get("state", dict()).get("reported", dict())
 
@@ -165,6 +203,10 @@ class MockShadowHandler(ThingShadowHandler):
     @reported.deleter
     def reported(self):
         self._full_state.update({"state": {"reported": None}})
+
+    @property
+    def delta(self) -> dict:
+        return self._full_state.get("state", dict()).get("delta", dict())
 
     def _default_delta_handler(self, delta: dict, responseStatus: str, token: str):
         self.update_shadow(delta)
@@ -205,6 +247,11 @@ class MockShadowHandler(ThingShadowHandler):
 
     def delete_shadow(self) -> None:
         self._full_state = dict()
+
+    def reset_mock(self):
+        for i in self.__dir__():
+            if isinstance(self.__getattribute__(i), MagicMock):
+                self.__getattribute__(i).reset_mock()
 
 
 class MockThingHandler(ThingHandler):
@@ -259,3 +306,12 @@ class MockThingHandler(ThingHandler):
     @property
     def job(self) -> ThingJobHandler:
         return self.__job_handler
+
+    def reset_mock(self):
+        self.thing.reset_mock()
+        self.shadow.reset_mock()
+        self.job.reset_mock()
+        self.delta_handler_register.reset_mock()
+        self.delta_handler_unregister.reset_mock()
+        self.execution_register.reset_mock()
+        self.execution_unregister.reset_mock()
