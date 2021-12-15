@@ -1,11 +1,11 @@
-from src.aws_iot.thing import (
+from aws_iot.thing import (
     ThingHandler,
     IoTThingConnector,
     ThingShadowHandler,
     ThingJobHandler,
 )
-from src.aws_iot.base_shadow import BaseShadow
-from src.aws_iot.thing.shadow import (
+from aws_iot.base_shadow import BaseShadow
+from aws_iot.thing.shadow import (
     _update_nested_dict,
     _delete_values_if_present,
     _delete_keys_if_values_equal,
