@@ -1,5 +1,5 @@
 def test_thing_mock():
-    from src.aws_iot.testing.mock import MockThingHandler
+    from aws_iot.testing.mock import MockThingHandler
 
     mock = MockThingHandler("TestThing", "eu-central-1", "asbf", "./")
     mock.thing.mqtt.connect()

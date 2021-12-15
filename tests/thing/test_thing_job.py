@@ -192,7 +192,7 @@ def test_without_registered_execution(iot_connector):
         document=json.dumps(job_document),
     )
 
-    from src.aws_iot.thing import ThingJobHandler
+    from aws_iot.thing import ThingJobHandler
 
     th = ThingJobHandler(
         aws_thing_connector=iot_connector,
