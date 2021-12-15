@@ -112,7 +112,7 @@ def test_add_delta_handler_signature_check(iot_connector):
     sc.delta_handler_register(correct_func)
 
 
-@patch("src.aws_iot.thing.shadow.ThingShadowHandler._default_delta_handler")
+@patch("aws_iot.thing.shadow.ThingShadowHandler._default_delta_handler")
 def test_default_delta_handler(mock_default_handler, iot_connector):
     from aws_iot.thing.shadow import ThingShadowHandler
 
