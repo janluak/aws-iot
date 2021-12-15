@@ -96,7 +96,7 @@ def iot_resource(setup_thing, thing_name=ConfigMoto.TestThingName):
 
 @fixture
 def iot_connector(test_env_real):
-    from src.aws_iot.thing.connector import IoTThingConnector
+    from aws_iot.thing.connector import IoTThingConnector
 
     c = IoTThingConnector(
         environ["TestThingName"],
