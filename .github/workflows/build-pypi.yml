@@ -25,7 +25,7 @@ jobs:
       - name: get version of package
         id: get_version
         run: |
-          echo -e "import ${{ github.event.repository.name }}\nprint(${{ github.event.repository.name }}.__version__)" >> get_version.py
+          echo -e "import aws_iot\nprint(aws_iot.__version__)" >> get_version.py
           echo ::set-output name=VERSION::"$(python get_version.py)"
       - name: build package
         run: |
