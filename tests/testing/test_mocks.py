@@ -10,6 +10,7 @@ def test_thing_mock():
 
     mock.shadow.state.update({"state": {"desired": {"test_state": True}}})
     assert mock.shadow.desired == {"test_state": True}
+    mock.__del__()
 
 
 def test_mock_reset():

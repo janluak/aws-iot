@@ -315,3 +315,6 @@ class MockThingHandler(ThingHandler):
         self.delta_handler_unregister.reset_mock()
         self.execution_register.reset_mock()
         self.execution_unregister.reset_mock()
+
+    def __del__(self):
+        pass
