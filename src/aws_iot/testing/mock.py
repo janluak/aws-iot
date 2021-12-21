@@ -40,6 +40,7 @@ class MockConnector(IoTThingConnector):
         self.__thing_name = thing_name
         self.__mqtt_client = MockMQTT()
         self.__connected = True
+        self.reset_mock()
 
     @property
     def thing_name(self) -> str:

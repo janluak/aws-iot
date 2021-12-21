@@ -23,3 +23,17 @@ def test_mock_reset():
     mock.reset_mock()
     mock.thing.mqtt.connect.assert_not_called()
 
+
+def test_mock_connector_publish_reset():
+    from aws_iot.testing.mock import MockConnector
+    mock = MockConnector("test_name")
+    mock.publish(123)
+    mock.publish.assert_called()
+    mock.reset_mock()
+    mock.publish.assert_not_called()
+    mock.publish(123)
+
+    mock = MockConnector("test_name")
+    mock.publish.assert_not_called()
+
+
