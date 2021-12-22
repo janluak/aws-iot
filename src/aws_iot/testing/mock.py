@@ -187,11 +187,11 @@ class MockShadowHandler(ThingShadowHandler):
 
     @property
     def desired(self) -> dict:
-        return self._full_state.get("state", dict()).get("desired", dict())
+        return self._full_state.get("desired", dict())
 
     @property
     def reported(self) -> dict:
-        return self._full_state.get("state", dict()).get("reported", dict())
+        return self._full_state.get("reported", dict())
 
     @reported.setter
     def reported(self, new_state: dict):
@@ -207,10 +207,13 @@ class MockShadowHandler(ThingShadowHandler):
 
     @property
     def delta(self) -> dict:
-        return self._full_state.get("state", dict()).get("delta", dict())
+        return self._full_state.get("delta", dict())
 
     def _default_delta_handler(self, delta: dict, responseStatus: str, token: str):
         self.update_shadow(delta)
+
+    def cache_new_state(self, new_state: dict):
+        self.__cache_new_state = _update_nested_dict(self.__cache_new_state, new_state)
 
     def update_shadow(
         self, new_state: (dict, None) = None, clear_desired: bool = False
@@ -224,27 +227,23 @@ class MockShadowHandler(ThingShadowHandler):
             self.__cache_new_state = dict()
 
         update_state = {
-            "state": {
                 "reported": _delete_values_if_present(
                     state, self._full_state.get("reported", dict())
                 )
-            }
         }
         if clear_desired:
-            update_state["state"]["desired"] = _delete_values_if_present(
+            update_state["desired"] = _delete_values_if_present(
                 self.desired, new_state, True
             )
 
         update_state = _delete_keys_if_values_equal(
             update_state,
             {
-                "state": {
-                    "reported": self._full_state.get("reported", dict()),
-                    "desired": self._full_state.get("desired", dict()),
-                }
+                "reported": self._full_state.get("reported", dict()),
+                "desired": self._full_state.get("desired", dict()),
             },
         )
-        self._full_state.update(update_state)
+        self._full_state = _update_nested_dict(self._full_state, update_state)
 
     def delete_shadow(self) -> None:
         self._full_state = dict()

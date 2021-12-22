@@ -8,7 +8,7 @@ def test_thing_mock():
     mock.shadow.reported = {"test_state": True}
     assert mock.shadow.reported == {"test_state": True}
 
-    mock.shadow.state.update({"state": {"desired": {"test_state": True}}})
+    mock.shadow.state.update({"desired": {"test_state": True}})
     assert mock.shadow.desired == {"test_state": True}
     mock.__del__()
 
@@ -37,3 +37,20 @@ def test_mock_connector_publish_reset():
     mock.publish.assert_not_called()
 
 
+def test_mock_shadow_cache_new_update():
+    from aws_iot.testing.mock import MockShadowHandler
+    mock = MockShadowHandler("TestThing", "eu-central-1")
+    mock.cache_new_state({"some_state": "some_value"})
+    mock.update_shadow({"additional_state": "additional_value"})
+
+    assert mock.state == {
+            "reported": {
+                "some_state": "some_value",
+                "additional_state": "additional_value"
+            }
+    }
+
+    assert mock.reported == {
+        "some_state": "some_value",
+        "additional_state": "additional_value"
+    }
