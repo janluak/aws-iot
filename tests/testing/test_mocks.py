@@ -54,3 +54,12 @@ def test_mock_shadow_cache_new_update():
         "some_state": "some_value",
         "additional_state": "additional_value"
     }
+
+
+def test_reset_shadow():
+    from aws_iot.testing.mock import MockShadowHandler
+    mock = MockShadowHandler("TestThing", "eu-central-1")
+    mock.reported = {"some_state": "some_value"}
+    mock.reset_mock()
+    assert mock.reported == dict()
+

@@ -249,6 +249,7 @@ class MockShadowHandler(ThingShadowHandler):
         self._full_state = dict()
 
     def reset_mock(self):
+        self._full_state = dict()
         for i in self.__dir__():
             if isinstance(self.__getattribute__(i), MagicMock):
                 self.__getattribute__(i).reset_mock()
