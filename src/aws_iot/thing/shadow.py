@@ -289,7 +289,7 @@ class ThingShadowHandler(BaseShadow):
         state = deepcopy(self._full_state.get("reported", dict()))
 
         if new_state:
-            state.update(new_state)
+            state.update(deepcopy(new_state))
         if self.__cache_new_state:
             state = _update_nested_dict(state, self.__cache_new_state)
             self.__cache_new_state = dict()
