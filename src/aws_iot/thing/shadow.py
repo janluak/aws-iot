@@ -363,7 +363,7 @@ class ThingShadowHandler(BaseShadow):
             logging.info("successfully updated shadow file")
         else:
             logging.critical(
-                f"__callback_updating_shadow: not parsed response: {payload}"
+                f"__callback_updating_shadow: not parsed response:\n{responseStatus=}\n{token=}\n{payload=}\n----"
             )
 
         try:
