@@ -136,7 +136,7 @@ class IoTThingConnector:
     def publish(
         self,
         topic: str,
-        payload: [dict, list, str, float, int],
+        payload: (dict, list, str, float, int),
         service_level: int = QUALITY_OF_SERVICE_AT_LEAST_ONCE,
     ):
         return self.mqtt.publish(topic, json.dumps(payload), service_level)
