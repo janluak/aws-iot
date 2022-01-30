@@ -284,7 +284,7 @@ class ThingShadowHandler(BaseShadow):
 
     def update_shadow(
         self, new_state: (dict, None) = None, clear_desired: bool = False
-    ):
+    ) -> (str, None):
         self.__update_lock.acquire()
         state = deepcopy(self._full_state.get("reported", dict()))
 
@@ -318,7 +318,7 @@ class ThingShadowHandler(BaseShadow):
         if update_state != {"state": dict()} or _is_parent_function(
             "__create_aws_handler"
         ):
-            self.__shadow_handler.shadowUpdate(
+            return self.__shadow_handler.shadowUpdate(
                 json.dumps(update_state),
                 self.__callback_updating_shadow,
                 MQTT_OPERATION_TIMEOUT,
