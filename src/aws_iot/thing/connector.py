@@ -4,6 +4,7 @@ from pathlib import Path
 import logging
 from glob import glob
 import json
+from typing import Callable
 
 __all__ = [
     "IoTThingConnector",
@@ -140,6 +141,15 @@ class IoTThingConnector:
         service_level: int = QUALITY_OF_SERVICE_AT_LEAST_ONCE,
     ):
         return self.mqtt.publish(topic, json.dumps(payload), service_level)
+
+    def publish_async(
+            self,
+            topic: str,
+            payload:  (dict, list, str, float, int),
+            service_level: int = QUALITY_OF_SERVICE_AT_LEAST_ONCE,
+            callback: (Callable, None) = None
+    ):
+        return self.mqtt.publishAsync(topic, json.dumps(payload), service_level, callback)
 
     def __enter__(self):
         self.connect()
