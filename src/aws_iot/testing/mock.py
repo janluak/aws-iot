@@ -35,6 +35,7 @@ class MockMQTT(AWSIoTMQTTClient):
 
 class MockConnector(IoTThingConnector):
     publish = MagicMock()
+    publish_async = MagicMock()
 
     def __init__(self, thing_name: str, **_):
         self.__thing_name = thing_name
